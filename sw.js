@@ -1,5 +1,5 @@
 // Service Worker for Poker Night Tracker
-const CACHE_NAME = 'poker-tracker-v8';
+const CACHE_NAME = 'poker-tracker-v9';
 const urlsToCache = [
   './',
   './index.html',
@@ -8,13 +8,13 @@ const urlsToCache = [
   './manifest.json'
 ];
 
-// Install event
+// Install event - force update
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(urlsToCache))
+      .then(() => self.skipWaiting())
   );
-  self.skipWaiting();
 });
 
 // Activate event
