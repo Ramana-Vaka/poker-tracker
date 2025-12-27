@@ -28,54 +28,58 @@ const STORAGE_KEYS = {
 // DOM Elements
 // ===========================
 
-const elements = {
-    // Session
-    sessionIndicator: document.getElementById('sessionIndicator'),
-    startSessionBtn: document.getElementById('startSessionBtn'),
-    endSessionBtn: document.getElementById('endSessionBtn'),
-    sessionInfo: document.getElementById('sessionInfo'),
-    sessionDuration: document.getElementById('sessionDuration'),
-    totalPot: document.getElementById('totalPot'),
-    
-    // Players
-    playerNameInput: document.getElementById('playerNameInput'),
-    addPlayerBtn: document.getElementById('addPlayerBtn'),
-    playersList: document.getElementById('playersList'),
-    
-    // Buy-in
-    buyinForm: document.getElementById('buyinForm'),
-    buyinPlayer: document.getElementById('buyinPlayer'),
-    buyinAmount: document.getElementById('buyinAmount'),
-    
-    // Cash-out Modal
-    cashoutModal: document.getElementById('cashoutModal'),
-    closeCashoutBtn: document.getElementById('closeCashoutBtn'),
-    cashoutPlayerName: document.getElementById('cashoutPlayerName'),
-    cashoutTotalBuyin: document.getElementById('cashoutTotalBuyin'),
-    cashoutAmountInput: document.getElementById('cashoutAmountInput'),
-    cashoutResult: document.getElementById('cashoutResult'),
-    cashoutResultValue: document.getElementById('cashoutResultValue'),
-    confirmCashoutBtn: document.getElementById('confirmCashoutBtn'),
-    
-    // High Hand
-    highHandForm: document.getElementById('highHandForm'),
-    highHandPlayer: document.getElementById('highHandPlayer'),
-    highHandType: document.getElementById('highHandType'),
-    highHandCards: document.getElementById('highHandCards'),
-    highHandBonus: document.getElementById('highHandBonus'),
-    
-    // High Hands & Activity
-    highHandsList: document.getElementById('highHandsList'),
-    activityList: document.getElementById('activityList'),
-    
-    // Modal & Footer
-    historyModal: document.getElementById('historyModal'),
-    closeHistoryBtn: document.getElementById('closeHistoryBtn'),
-    historyContent: document.getElementById('historyContent'),
-    viewHistoryBtn: document.getElementById('viewHistoryBtn'),
-    exportDataBtn: document.getElementById('exportDataBtn'),
-    clearDataBtn: document.getElementById('clearDataBtn')
-};
+let elements = {};
+
+function initElements() {
+    elements = {
+        // Session
+        sessionIndicator: document.getElementById('sessionIndicator'),
+        startSessionBtn: document.getElementById('startSessionBtn'),
+        endSessionBtn: document.getElementById('endSessionBtn'),
+        sessionInfo: document.getElementById('sessionInfo'),
+        sessionDuration: document.getElementById('sessionDuration'),
+        totalPot: document.getElementById('totalPot'),
+        
+        // Players
+        playerNameInput: document.getElementById('playerNameInput'),
+        addPlayerBtn: document.getElementById('addPlayerBtn'),
+        playersList: document.getElementById('playersList'),
+        
+        // Buy-in
+        buyinForm: document.getElementById('buyinForm'),
+        buyinPlayer: document.getElementById('buyinPlayer'),
+        buyinAmount: document.getElementById('buyinAmount'),
+        
+        // Cash-out Modal
+        cashoutModal: document.getElementById('cashoutModal'),
+        closeCashoutBtn: document.getElementById('closeCashoutBtn'),
+        cashoutPlayerName: document.getElementById('cashoutPlayerName'),
+        cashoutTotalBuyin: document.getElementById('cashoutTotalBuyin'),
+        cashoutAmountInput: document.getElementById('cashoutAmountInput'),
+        cashoutResult: document.getElementById('cashoutResult'),
+        cashoutResultValue: document.getElementById('cashoutResultValue'),
+        confirmCashoutBtn: document.getElementById('confirmCashoutBtn'),
+        
+        // High Hand
+        highHandForm: document.getElementById('highHandForm'),
+        highHandPlayer: document.getElementById('highHandPlayer'),
+        highHandType: document.getElementById('highHandType'),
+        highHandCards: document.getElementById('highHandCards'),
+        highHandBonus: document.getElementById('highHandBonus'),
+        
+        // High Hands & Activity
+        highHandsList: document.getElementById('highHandsList'),
+        activityList: document.getElementById('activityList'),
+        
+        // Modal & Footer
+        historyModal: document.getElementById('historyModal'),
+        closeHistoryBtn: document.getElementById('closeHistoryBtn'),
+        historyContent: document.getElementById('historyContent'),
+        viewHistoryBtn: document.getElementById('viewHistoryBtn'),
+        exportDataBtn: document.getElementById('exportDataBtn'),
+        clearDataBtn: document.getElementById('clearDataBtn')
+    };
+}
 
 // Duration timer interval
 let durationInterval = null;
@@ -85,6 +89,7 @@ let durationInterval = null;
 // ===========================
 
 function init() {
+    initElements();
     loadFromStorage();
     setupEventListeners();
     
@@ -97,43 +102,45 @@ function init() {
 
 function setupEventListeners() {
     // Session controls
-    elements.startSessionBtn.addEventListener('click', startSession);
-    elements.endSessionBtn.addEventListener('click', endSession);
+    if (elements.startSessionBtn) elements.startSessionBtn.addEventListener('click', startSession);
+    if (elements.endSessionBtn) elements.endSessionBtn.addEventListener('click', endSession);
     
     // Player management
-    elements.addPlayerBtn.addEventListener('click', addPlayer);
-    elements.playerNameInput.addEventListener('keypress', (e) => {
+    if (elements.addPlayerBtn) elements.addPlayerBtn.addEventListener('click', addPlayer);
+    if (elements.playerNameInput) elements.playerNameInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') addPlayer();
     });
     
     // Forms
-    elements.buyinForm.addEventListener('submit', handleBuyin);
-    elements.highHandForm.addEventListener('submit', handleHighHand);
+    if (elements.buyinForm) elements.buyinForm.addEventListener('submit', handleBuyin);
+    if (elements.highHandForm) elements.highHandForm.addEventListener('submit', handleHighHand);
     
     // Cash-out modal
-    elements.closeCashoutBtn.addEventListener('click', hideCashoutModal);
-    elements.cashoutModal.addEventListener('click', (e) => {
+    if (elements.closeCashoutBtn) elements.closeCashoutBtn.addEventListener('click', hideCashoutModal);
+    if (elements.cashoutModal) elements.cashoutModal.addEventListener('click', (e) => {
         if (e.target === elements.cashoutModal) hideCashoutModal();
     });
-    elements.cashoutAmountInput.addEventListener('input', updateCashoutPreview);
-    elements.confirmCashoutBtn.addEventListener('click', confirmCashout);
+    if (elements.cashoutAmountInput) elements.cashoutAmountInput.addEventListener('input', updateCashoutPreview);
+    if (elements.confirmCashoutBtn) elements.confirmCashoutBtn.addEventListener('click', confirmCashout);
     
     // Quick amount buttons
     document.querySelectorAll('.chip-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            elements.buyinAmount.value = btn.dataset.amount;
-            elements.buyinAmount.focus();
+            if (elements.buyinAmount) {
+                elements.buyinAmount.value = btn.dataset.amount;
+                elements.buyinAmount.focus();
+            }
         });
     });
     
     // Modal & Footer
-    elements.viewHistoryBtn.addEventListener('click', showHistory);
-    elements.closeHistoryBtn.addEventListener('click', hideHistory);
-    elements.historyModal.addEventListener('click', (e) => {
+    if (elements.viewHistoryBtn) elements.viewHistoryBtn.addEventListener('click', showHistory);
+    if (elements.closeHistoryBtn) elements.closeHistoryBtn.addEventListener('click', hideHistory);
+    if (elements.historyModal) elements.historyModal.addEventListener('click', (e) => {
         if (e.target === elements.historyModal) hideHistory();
     });
-    elements.exportDataBtn.addEventListener('click', exportData);
-    elements.clearDataBtn.addEventListener('click', clearAllData);
+    if (elements.exportDataBtn) elements.exportDataBtn.addEventListener('click', exportData);
+    if (elements.clearDataBtn) elements.clearDataBtn.addEventListener('click', clearAllData);
 }
 
 // ===========================
@@ -168,10 +175,23 @@ function loadFromStorage() {
 // ===========================
 
 function startSession() {
+    // Prompt for initial buy-in amount
+    const defaultBuyin = prompt('Enter initial buy-in amount for all players:\n(Leave empty to skip)', '20');
+    const initialBuyin = defaultBuyin ? parseFloat(defaultBuyin) : 0;
+    
+    if (defaultBuyin !== null && isNaN(initialBuyin)) {
+        alert('Please enter a valid number');
+        return;
+    }
+    
+    // If user clicked cancel, don't start session
+    if (defaultBuyin === null) return;
+    
     state.currentSession = {
         id: Date.now(),
         startTime: new Date().toISOString(),
         endTime: null,
+        initialBuyin: initialBuyin,
         players: [],
         activities: [],
         highHands: []
@@ -186,7 +206,8 @@ function startSession() {
     updateSessionUI(true);
     startDurationTimer();
     
-    addActivity('system', 'Session started', null);
+    const buyinText = initialBuyin > 0 ? ` (Initial buy-in: $${initialBuyin})` : '';
+    addActivity('system', `Session started${buyinText}`, null);
 }
 
 function endSession() {
@@ -225,14 +246,17 @@ function restoreSession() {
 }
 
 function updateSessionUI(isActive) {
-    elements.sessionIndicator.classList.toggle('active', isActive);
-    elements.sessionIndicator.querySelector('.session-text').textContent = 
-        isActive ? 'Session Active' : 'No Active Session';
+    if (elements.sessionIndicator) {
+        elements.sessionIndicator.classList.toggle('active', isActive);
+        const sessionText = elements.sessionIndicator.querySelector('.session-text');
+        if (sessionText) {
+            sessionText.textContent = isActive ? 'Session Active' : 'No Active Session';
+        }
+    }
     
-    elements.startSessionBtn.classList.toggle('hidden', isActive);
-    elements.endSessionBtn.classList.toggle('hidden', !isActive);
-    elements.sessionInfo.classList.toggle('hidden', !isActive);
-    
+    if (elements.startSessionBtn) elements.startSessionBtn.classList.toggle('hidden', isActive);
+    if (elements.endSessionBtn) elements.endSessionBtn.classList.toggle('hidden', !isActive);
+    if (elements.sessionInfo) elements.sessionInfo.classList.toggle('hidden', !isActive);
 }
 
 function startDurationTimer() {
@@ -287,6 +311,8 @@ function addPlayer() {
         return;
     }
     
+    const initialBuyin = state.currentSession.initialBuyin || 0;
+    
     const player = {
         id: Date.now(),
         name: name,
@@ -295,10 +321,24 @@ function addPlayer() {
         totalBuyin: 0
     };
     
+    // Auto-apply initial buy-in if set
+    if (initialBuyin > 0) {
+        player.buyins.push({
+            amount: initialBuyin,
+            time: new Date().toISOString()
+        });
+        player.totalBuyin = initialBuyin;
+    }
+    
     state.players.push(player);
     elements.playerNameInput.value = '';
     
-    addActivity('player', `${name} joined the game`, null);
+    if (initialBuyin > 0) {
+        addActivity('buyin', `${name} joined with $${initialBuyin} buy-in`, initialBuyin);
+    } else {
+        addActivity('player', `${name} joined the game`, null);
+    }
+    
     saveCurrentSession();
     renderAll();
 }
@@ -355,9 +395,14 @@ function handleBuyin(e) {
 let cashoutPlayerId = null;
 
 function getPlayerHighHandBonus(playerId) {
-    return state.highHands
-        .filter(hh => hh.playerId === playerId)
-        .reduce((sum, hh) => sum + (hh.bonus || 0), 0);
+    // Only the CURRENT (latest) high hand winner gets the bonus
+    if (state.highHands.length === 0) return 0;
+    
+    const currentHighHand = state.highHands[state.highHands.length - 1];
+    if (currentHighHand.playerId === playerId) {
+        return currentHighHand.bonus || 0;
+    }
+    return 0;
 }
 
 function openCashoutModal(playerId) {
@@ -607,16 +652,35 @@ function renderHighHands() {
         return;
     }
     
-    elements.highHandsList.innerHTML = state.highHands.map(hh => `
-        <li class="high-hand-item">
+    // Only show the current (latest) high hand as the winner
+    const currentHH = state.highHands[state.highHands.length - 1];
+    
+    let html = `
+        <li class="high-hand-item current">
             <div class="high-hand-header">
-                <span class="high-hand-type">${escapeHtml(hh.handType)}</span>
-                ${hh.bonus > 0 ? `<span class="high-hand-bonus">+$${hh.bonus}</span>` : ''}
+                <span class="high-hand-type">${escapeHtml(currentHH.handType)}</span>
+                ${currentHH.bonus > 0 ? `<span class="high-hand-bonus">+$${currentHH.bonus}</span>` : ''}
             </div>
-            <div class="high-hand-player">${escapeHtml(hh.playerName)}</div>
-            ${hh.cards ? `<div class="high-hand-cards">${escapeHtml(hh.cards)}</div>` : ''}
+            <div class="high-hand-player">🏆 ${escapeHtml(currentHH.playerName)}</div>
+            ${currentHH.cards ? `<div class="high-hand-cards">${escapeHtml(currentHH.cards)}</div>` : ''}
         </li>
-    `).join('');
+    `;
+    
+    // Show previous high hands as "beaten" (optional history)
+    if (state.highHands.length > 1) {
+        const previousHands = state.highHands.slice(0, -1).reverse();
+        html += previousHands.map(hh => `
+            <li class="high-hand-item beaten">
+                <div class="high-hand-header">
+                    <span class="high-hand-type">${escapeHtml(hh.handType)}</span>
+                    <span class="beaten-label">beaten</span>
+                </div>
+                <div class="high-hand-player">${escapeHtml(hh.playerName)}</div>
+            </li>
+        `).join('');
+    }
+    
+    elements.highHandsList.innerHTML = html;
 }
 
 function renderActivity() {

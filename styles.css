@@ -777,6 +777,27 @@ select option {
     border-left: 3px solid var(--gold);
 }
 
+.high-hand-item.current {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05));
+    border-left-width: 4px;
+}
+
+.high-hand-item.beaten {
+    opacity: 0.5;
+    border-left-color: var(--text-muted);
+}
+
+.high-hand-item.beaten .high-hand-type {
+    color: var(--text-muted);
+    text-decoration: line-through;
+}
+
+.beaten-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
 .high-hand-header {
     display: flex;
     justify-content: space-between;

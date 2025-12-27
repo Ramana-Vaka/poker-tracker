@@ -1,5 +1,5 @@
 // Service Worker for Poker Night Tracker
-const CACHE_NAME = 'poker-tracker-v1';
+const CACHE_NAME = 'poker-tracker-v5';
 const urlsToCache = [
   './',
   './index.html',
@@ -33,15 +33,21 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch event - network first, fallback to cache
 self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request)
+    fetch(event.request)
       .then(response => {
-        if (response) {
-          return response;
-        }
-        return fetch(event.request);
+        // Clone and cache the response
+        const responseClone = response.clone();
+        caches.open(CACHE_NAME).then(cache => {
+          cache.put(event.request, responseClone);
+        });
+        return response;
+      })
+      .catch(() => {
+        // Fallback to cache if network fails
+        return caches.match(event.request);
       })
   );
 });
