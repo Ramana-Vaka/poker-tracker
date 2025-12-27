@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1a8754">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Poker Night">
+    <title>Poker Night Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <span class="logo-icon">♠♥♦♣</span>
+                <h1>Poker Night</h1>
+            </div>
+            <div class="session-indicator" id="sessionIndicator">
+                <span class="pulse"></span>
+                <span class="session-text">No Active Session</span>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Left Panel - Session & Players -->
+            <aside class="left-panel">
+                <!-- Session Control -->
+                <section class="card session-control">
+                    <h2><span class="icon">🎰</span> Session</h2>
+                    <div class="session-actions">
+                        <button class="btn btn-primary" id="startSessionBtn">Start New Session</button>
+                        <button class="btn btn-danger hidden" id="endSessionBtn">End Session</button>
+                    </div>
+                    <div class="session-info hidden" id="sessionInfo">
+                        <div class="info-row">
+                            <span class="label">Started:</span>
+                            <span class="value" id="sessionStartTime">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Duration:</span>
+                            <span class="value" id="sessionDuration">0:00</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Total Pot:</span>
+                            <span class="value highlight" id="totalPot">$0</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Players -->
+                <section class="card players-section">
+                    <h2><span class="icon">👥</span> Players</h2>
+                    <div class="add-player-form">
+                        <input type="text" id="playerNameInput" placeholder="Player name..." maxlength="20">
+                        <button class="btn btn-accent" id="addPlayerBtn">+</button>
+                    </div>
+                    <ul class="players-list" id="playersList">
+                        <li class="empty-state">Start a session to add players</li>
+                    </ul>
+                </section>
+            </aside>
+
+            <!-- Center Panel - Main Actions -->
+            <section class="center-panel">
+                <!-- Buy-in Section -->
+                <div class="card action-card">
+                    <h2><span class="icon">💰</span> Record Buy-in</h2>
+                    <form class="action-form" id="buyinForm">
+                        <div class="form-group">
+                            <label>Player</label>
+                            <select id="buyinPlayer" required>
+                                <option value="">Select player...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Amount</label>
+                            <div class="input-with-prefix">
+                                <span class="prefix">$</span>
+                                <input type="number" id="buyinAmount" placeholder="0" min="1" step="1" required>
+                            </div>
+                        </div>
+                        <div class="quick-amounts">
+                            <button type="button" class="chip-btn" data-amount="20">$20</button>
+                            <button type="button" class="chip-btn" data-amount="50">$50</button>
+                            <button type="button" class="chip-btn" data-amount="100">$100</button>
+                            <button type="button" class="chip-btn" data-amount="200">$200</button>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-full">Record Buy-in</button>
+                    </form>
+                </div>
+
+                <!-- Cash-out Section -->
+                <div class="card action-card">
+                    <h2><span class="icon">🏧</span> Record Cash-out</h2>
+                    <form class="action-form" id="cashoutForm">
+                        <div class="form-group">
+                            <label>Player</label>
+                            <select id="cashoutPlayer" required>
+                                <option value="">Select player...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Amount</label>
+                            <div class="input-with-prefix">
+                                <span class="prefix">$</span>
+                                <input type="number" id="cashoutAmount" placeholder="0" min="0" step="1" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-secondary btn-full">Record Cash-out</button>
+                    </form>
+                </div>
+
+                <!-- High Hand Section -->
+                <div class="card action-card high-hand-card">
+                    <h2><span class="icon">🃏</span> Record High Hand</h2>
+                    <form class="action-form" id="highHandForm">
+                        <div class="form-group">
+                            <label>Player</label>
+                            <select id="highHandPlayer" required>
+                                <option value="">Select player...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Hand</label>
+                            <select id="highHandType" required>
+                                <option value="">Select hand...</option>
+                                <option value="Royal Flush">👑 Royal Flush</option>
+                                <option value="Straight Flush">🔥 Straight Flush</option>
+                                <option value="Four of a Kind">4️⃣ Four of a Kind</option>
+                                <option value="Full House">🏠 Full House</option>
+                                <option value="Flush">♠️ Flush</option>
+                                <option value="Straight">➡️ Straight</option>
+                                <option value="Three of a Kind">3️⃣ Three of a Kind</option>
+                                <option value="Two Pair">✌️ Two Pair</option>
+                                <option value="One Pair">☝️ One Pair</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Cards (optional)</label>
+                                <input type="text" id="highHandCards" placeholder="e.g., A♠ K♠ Q♠ J♠ 10♠">
+                            </div>
+                            <div class="form-group">
+                                <label>Bonus $</label>
+                                <div class="input-with-prefix">
+                                    <span class="prefix">$</span>
+                                    <input type="number" id="highHandBonus" placeholder="0" min="0" step="1">
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-gold btn-full">Record High Hand</button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Right Panel - Activity & Stats -->
+            <aside class="right-panel">
+                <!-- High Hands -->
+                <section class="card high-hands-section">
+                    <h2><span class="icon">🏆</span> High Hands</h2>
+                    <ul class="high-hands-list" id="highHandsList">
+                        <li class="empty-state">No high hands recorded</li>
+                    </ul>
+                </section>
+
+                <!-- Buy-ins Feed -->
+                <section class="card activity-section">
+                    <h2><span class="icon">💵</span> Buy-ins</h2>
+                    <ul class="activity-list" id="activityList">
+                        <li class="empty-state">No buy-ins recorded yet</li>
+                    </ul>
+                </section>
+            </aside>
+        </main>
+
+        <!-- History Modal -->
+        <div class="modal hidden" id="historyModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Session History</h2>
+                    <button class="modal-close" id="closeHistoryBtn">&times;</button>
+                </div>
+                <div class="modal-body" id="historyContent">
+                    <!-- History content populated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <button class="btn btn-ghost" id="viewHistoryBtn">📚 View History</button>
+            <button class="btn btn-ghost" id="exportDataBtn">📤 Export Data</button>
+            <button class="btn btn-ghost btn-danger-text" id="clearDataBtn">🗑️ Clear All Data</button>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        // Register Service Worker for PWA
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js')
+                .then(reg => console.log('Service Worker registered'))
+                .catch(err => console.log('Service Worker registration failed:', err));
+        }
+    </script>
+</body>
+</html>
+
