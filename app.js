@@ -47,10 +47,15 @@ const elements = {
     buyinPlayer: document.getElementById('buyinPlayer'),
     buyinAmount: document.getElementById('buyinAmount'),
     
-    // Cash-out
-    cashoutForm: document.getElementById('cashoutForm'),
-    cashoutPlayer: document.getElementById('cashoutPlayer'),
-    cashoutAmount: document.getElementById('cashoutAmount'),
+    // Cash-out Modal
+    cashoutModal: document.getElementById('cashoutModal'),
+    closeCashoutBtn: document.getElementById('closeCashoutBtn'),
+    cashoutPlayerName: document.getElementById('cashoutPlayerName'),
+    cashoutTotalBuyin: document.getElementById('cashoutTotalBuyin'),
+    cashoutAmountInput: document.getElementById('cashoutAmountInput'),
+    cashoutResult: document.getElementById('cashoutResult'),
+    cashoutResultValue: document.getElementById('cashoutResultValue'),
+    confirmCashoutBtn: document.getElementById('confirmCashoutBtn'),
     
     // High Hand
     highHandForm: document.getElementById('highHandForm'),
@@ -103,8 +108,15 @@ function setupEventListeners() {
     
     // Forms
     elements.buyinForm.addEventListener('submit', handleBuyin);
-    elements.cashoutForm.addEventListener('submit', handleCashout);
     elements.highHandForm.addEventListener('submit', handleHighHand);
+    
+    // Cash-out modal
+    elements.closeCashoutBtn.addEventListener('click', hideCashoutModal);
+    elements.cashoutModal.addEventListener('click', (e) => {
+        if (e.target === elements.cashoutModal) hideCashoutModal();
+    });
+    elements.cashoutAmountInput.addEventListener('input', updateCashoutPreview);
+    elements.confirmCashoutBtn.addEventListener('click', confirmCashout);
     
     // Quick amount buttons
     document.querySelectorAll('.chip-btn').forEach(btn => {
@@ -339,21 +351,60 @@ function handleBuyin(e) {
     renderAll();
 }
 
-function handleCashout(e) {
-    e.preventDefault();
-    
-    if (!state.currentSession) {
-        alert('Please start a session first!');
-        return;
-    }
-    
-    const playerId = parseInt(elements.cashoutPlayer.value);
-    const amount = parseFloat(elements.cashoutAmount.value);
-    
-    if (!playerId || amount === undefined || amount < 0) return;
-    
+// Current player being cashed out
+let cashoutPlayerId = null;
+
+function openCashoutModal(playerId) {
     const player = state.players.find(p => p.id === playerId);
     if (!player) return;
+    
+    cashoutPlayerId = playerId;
+    
+    elements.cashoutPlayerName.textContent = player.name;
+    elements.cashoutTotalBuyin.textContent = `$${player.totalBuyin}`;
+    elements.cashoutAmountInput.value = '';
+    elements.cashoutResult.classList.add('hidden');
+    elements.cashoutResultValue.className = 'result-value';
+    
+    elements.cashoutModal.classList.remove('hidden');
+    elements.cashoutAmountInput.focus();
+}
+
+function hideCashoutModal() {
+    elements.cashoutModal.classList.add('hidden');
+    cashoutPlayerId = null;
+}
+
+function updateCashoutPreview() {
+    const player = state.players.find(p => p.id === cashoutPlayerId);
+    if (!player) return;
+    
+    const cashoutAmount = parseFloat(elements.cashoutAmountInput.value) || 0;
+    const profit = cashoutAmount - player.totalBuyin;
+    
+    elements.cashoutResult.classList.remove('hidden');
+    
+    if (profit > 0) {
+        elements.cashoutResultValue.textContent = `+$${profit} Won!`;
+        elements.cashoutResultValue.className = 'result-value profit';
+    } else if (profit < 0) {
+        elements.cashoutResultValue.textContent = `-$${Math.abs(profit)} Lost`;
+        elements.cashoutResultValue.className = 'result-value loss';
+    } else {
+        elements.cashoutResultValue.textContent = `$0 Even`;
+        elements.cashoutResultValue.className = 'result-value even';
+    }
+}
+
+function confirmCashout() {
+    const player = state.players.find(p => p.id === cashoutPlayerId);
+    if (!player) return;
+    
+    const amount = parseFloat(elements.cashoutAmountInput.value);
+    if (isNaN(amount) || amount < 0) {
+        alert('Please enter a valid amount');
+        return;
+    }
     
     player.cashout = {
         amount: amount,
@@ -365,7 +416,7 @@ function handleCashout(e) {
     
     addActivity('cashout', `${player.name} cashed out (${profitStr})`, amount);
     
-    elements.cashoutForm.reset();
+    hideCashoutModal();
     saveCurrentSession();
     renderAll();
 }
@@ -467,18 +518,44 @@ function renderPlayers() {
         return;
     }
     
-    elements.playersList.innerHTML = state.players.map(player => `
-        <li>
-            <div class="player-info">
-                <div class="player-avatar">${player.name.charAt(0)}</div>
-                <div class="player-details">
-                    <span class="player-name">${escapeHtml(player.name)}</span>
-                    <span class="player-stats">${player.buyins.length} buy-in${player.buyins.length !== 1 ? 's' : ''} • $${player.totalBuyin}</span>
+    elements.playersList.innerHTML = state.players.map(player => {
+        const hasCashedOut = player.cashout !== null;
+        let actionHtml = '';
+        
+        if (hasCashedOut) {
+            const profit = player.cashout.amount - player.totalBuyin;
+            let resultClass = 'even';
+            let resultText = '$0';
+            
+            if (profit > 0) {
+                resultClass = 'profit';
+                resultText = `+$${profit}`;
+            } else if (profit < 0) {
+                resultClass = 'loss';
+                resultText = `-$${Math.abs(profit)}`;
+            }
+            
+            actionHtml = `<span class="player-result ${resultClass}">${resultText}</span>`;
+        } else if (player.totalBuyin > 0) {
+            actionHtml = `<button class="cashout-btn" onclick="openCashoutModal(${player.id})">Cash Out</button>`;
+        }
+        
+        return `
+            <li>
+                <div class="player-info">
+                    <div class="player-avatar">${player.name.charAt(0)}</div>
+                    <div class="player-details">
+                        <span class="player-name">${escapeHtml(player.name)}</span>
+                        <span class="player-stats">${player.buyins.length} buy-in${player.buyins.length !== 1 ? 's' : ''} • $${player.totalBuyin}</span>
+                    </div>
                 </div>
-            </div>
-            <button class="remove-player-btn" onclick="removePlayer(${player.id})" title="Remove player">✕</button>
-        </li>
-    `).join('');
+                <div class="player-actions">
+                    ${actionHtml}
+                    <button class="remove-player-btn" onclick="removePlayer(${player.id})" title="Remove player">✕</button>
+                </div>
+            </li>
+        `;
+    }).join('');
 }
 
 function renderPlayerSelects() {
@@ -489,7 +566,6 @@ function renderPlayerSelects() {
     const defaultOption = '<option value="">Select player...</option>';
     
     elements.buyinPlayer.innerHTML = defaultOption + options;
-    elements.cashoutPlayer.innerHTML = defaultOption + options;
     elements.highHandPlayer.innerHTML = defaultOption + options;
 }
 
@@ -666,8 +742,9 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Make removePlayer available globally for onclick
+// Make functions available globally for onclick
 window.removePlayer = removePlayer;
+window.openCashoutModal = openCashoutModal;
 
 // ===========================
 // Initialize App

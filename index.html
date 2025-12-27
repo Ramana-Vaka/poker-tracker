@@ -60,7 +60,7 @@
             <!-- Center Panel - Main Actions -->
             <section class="center-panel">
                 <!-- Buy-in Section -->
-                <div class="card action-card">
+                <div class="card action-card buyin-card">
                     <h2><span class="icon">💰</span> Record Buy-in</h2>
                     <form class="action-form" id="buyinForm">
                         <div class="form-group">
@@ -83,27 +83,6 @@
                             <button type="button" class="chip-btn" data-amount="200">$200</button>
                         </div>
                         <button type="submit" class="btn btn-primary btn-full">Record Buy-in</button>
-                    </form>
-                </div>
-
-                <!-- Cash-out Section -->
-                <div class="card action-card">
-                    <h2><span class="icon">🏧</span> Record Cash-out</h2>
-                    <form class="action-form" id="cashoutForm">
-                        <div class="form-group">
-                            <label>Player</label>
-                            <select id="cashoutPlayer" required>
-                                <option value="">Select player...</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Amount</label>
-                            <div class="input-with-prefix">
-                                <span class="prefix">$</span>
-                                <input type="number" id="cashoutAmount" placeholder="0" min="0" step="1" required>
-                            </div>
-                        </div>
-                        <button type="submit" class="btn btn-secondary btn-full">Record Cash-out</button>
                     </form>
                 </div>
 
@@ -169,6 +148,34 @@
                 </section>
             </aside>
         </main>
+
+        <!-- Cash-out Modal -->
+        <div class="modal hidden" id="cashoutModal">
+            <div class="modal-content cashout-modal">
+                <div class="modal-header">
+                    <h2>💵 Cash Out</h2>
+                    <button class="modal-close" id="closeCashoutBtn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="cashout-player-info">
+                        <span class="cashout-player-name" id="cashoutPlayerName">Player</span>
+                        <span class="cashout-total-buyin">Total Buy-in: <strong id="cashoutTotalBuyin">$0</strong></span>
+                    </div>
+                    <div class="form-group">
+                        <label>Final Stack (cash out amount)</label>
+                        <div class="input-with-prefix">
+                            <span class="prefix">$</span>
+                            <input type="number" id="cashoutAmountInput" placeholder="0" min="0" step="1">
+                        </div>
+                    </div>
+                    <div class="cashout-result hidden" id="cashoutResult">
+                        <span class="result-label">Result:</span>
+                        <span class="result-value" id="cashoutResultValue">$0</span>
+                    </div>
+                    <button class="btn btn-primary btn-full" id="confirmCashoutBtn">Confirm Cash Out</button>
+                </div>
+            </div>
+        </div>
 
         <!-- History Modal -->
         <div class="modal hidden" id="historyModal">
