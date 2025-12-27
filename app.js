@@ -34,7 +34,6 @@ const elements = {
     startSessionBtn: document.getElementById('startSessionBtn'),
     endSessionBtn: document.getElementById('endSessionBtn'),
     sessionInfo: document.getElementById('sessionInfo'),
-    sessionStartTime: document.getElementById('sessionStartTime'),
     sessionDuration: document.getElementById('sessionDuration'),
     totalPot: document.getElementById('totalPot'),
     
@@ -222,13 +221,6 @@ function updateSessionUI(isActive) {
     elements.endSessionBtn.classList.toggle('hidden', !isActive);
     elements.sessionInfo.classList.toggle('hidden', !isActive);
     
-    if (isActive && state.currentSession) {
-        const startDate = new Date(state.currentSession.startTime);
-        elements.sessionStartTime.textContent = startDate.toLocaleTimeString([], { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-        });
-    }
 }
 
 function startDurationTimer() {

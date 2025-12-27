@@ -33,28 +33,16 @@
         <main class="main-content">
             <!-- Left Panel - Session & Players -->
             <aside class="left-panel">
-                <!-- Session Control -->
-                <section class="card session-control">
-                    <h2><span class="icon">🎰</span> Session</h2>
-                    <div class="session-actions">
-                        <button class="btn btn-primary" id="startSessionBtn">Start New Session</button>
-                        <button class="btn btn-danger hidden" id="endSessionBtn">End Session</button>
+                <!-- Session Control - Compact -->
+                <div class="session-bar">
+                    <button class="btn btn-primary btn-sm" id="startSessionBtn">▶ Start</button>
+                    <button class="btn btn-danger btn-sm hidden" id="endSessionBtn">⏹ End</button>
+                    <div class="session-stats hidden" id="sessionInfo">
+                        <span class="stat-item" id="sessionDuration">0:00</span>
+                        <span class="stat-divider">|</span>
+                        <span class="stat-item pot" id="totalPot">$0</span>
                     </div>
-                    <div class="session-info hidden" id="sessionInfo">
-                        <div class="info-row">
-                            <span class="label">Started:</span>
-                            <span class="value" id="sessionStartTime">-</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="label">Duration:</span>
-                            <span class="value" id="sessionDuration">0:00</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="label">Total Pot:</span>
-                            <span class="value highlight" id="totalPot">$0</span>
-                        </div>
-                    </div>
-                </section>
+                </div>
 
                 <!-- Players -->
                 <section class="card players-section">
