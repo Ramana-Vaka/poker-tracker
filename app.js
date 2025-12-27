@@ -354,14 +354,34 @@ function handleBuyin(e) {
 // Current player being cashed out
 let cashoutPlayerId = null;
 
+function getPlayerHighHandBonus(playerId) {
+    return state.highHands
+        .filter(hh => hh.playerId === playerId)
+        .reduce((sum, hh) => sum + (hh.bonus || 0), 0);
+}
+
 function openCashoutModal(playerId) {
     const player = state.players.find(p => p.id === playerId);
     if (!player) return;
     
     cashoutPlayerId = playerId;
     
+    const highHandBonus = getPlayerHighHandBonus(playerId);
+    
     elements.cashoutPlayerName.textContent = player.name;
     elements.cashoutTotalBuyin.textContent = `$${player.totalBuyin}`;
+    
+    // Show high hand bonus if any
+    const bonusEl = document.getElementById('cashoutHighHandBonus');
+    if (bonusEl) {
+        if (highHandBonus > 0) {
+            bonusEl.textContent = `+$${highHandBonus}`;
+            bonusEl.parentElement.classList.remove('hidden');
+        } else {
+            bonusEl.parentElement.classList.add('hidden');
+        }
+    }
+    
     elements.cashoutAmountInput.value = '';
     elements.cashoutResult.classList.add('hidden');
     elements.cashoutResultValue.className = 'result-value';
@@ -380,7 +400,9 @@ function updateCashoutPreview() {
     if (!player) return;
     
     const cashoutAmount = parseFloat(elements.cashoutAmountInput.value) || 0;
-    const profit = cashoutAmount - player.totalBuyin;
+    const highHandBonus = getPlayerHighHandBonus(cashoutPlayerId);
+    // Profit = cash out + high hand bonus - buy-ins
+    const profit = (cashoutAmount + highHandBonus) - player.totalBuyin;
     
     elements.cashoutResult.classList.remove('hidden');
     
@@ -406,12 +428,16 @@ function confirmCashout() {
         return;
     }
     
+    const highHandBonus = getPlayerHighHandBonus(cashoutPlayerId);
+    
     player.cashout = {
         amount: amount,
+        highHandBonus: highHandBonus,
         time: new Date().toISOString()
     };
     
-    const profit = amount - player.totalBuyin;
+    // Profit = cash out + high hand bonus - buy-ins
+    const profit = (amount + highHandBonus) - player.totalBuyin;
     const profitStr = profit >= 0 ? `+$${profit}` : `-$${Math.abs(profit)}`;
     
     addActivity('cashout', `${player.name} cashed out (${profitStr})`, amount);
@@ -520,10 +546,16 @@ function renderPlayers() {
     
     elements.playersList.innerHTML = state.players.map(player => {
         const hasCashedOut = player.cashout !== null;
+        const highHandBonus = getPlayerHighHandBonus(player.id);
         let actionHtml = '';
         
+        // Show high hand indicator if player has one
+        const hhIndicator = highHandBonus > 0 ? `<span class="hh-indicator" title="High Hand Bonus">🏆+$${highHandBonus}</span>` : '';
+        
         if (hasCashedOut) {
-            const profit = player.cashout.amount - player.totalBuyin;
+            // Include high hand bonus in profit calculation
+            const bonus = player.cashout.highHandBonus || highHandBonus;
+            const profit = (player.cashout.amount + bonus) - player.totalBuyin;
             let resultClass = 'even';
             let resultText = '$0';
             
@@ -545,7 +577,7 @@ function renderPlayers() {
                 <div class="player-info">
                     <div class="player-avatar">${player.name.charAt(0)}</div>
                     <div class="player-details">
-                        <span class="player-name">${escapeHtml(player.name)}</span>
+                        <span class="player-name">${escapeHtml(player.name)} ${hhIndicator}</span>
                         <span class="player-stats">${player.buyins.length} buy-in${player.buyins.length !== 1 ? 's' : ''} • $${player.totalBuyin}</span>
                     </div>
                 </div>

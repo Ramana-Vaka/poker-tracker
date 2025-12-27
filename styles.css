@@ -426,6 +426,22 @@ body {
     color: var(--gold);
 }
 
+.cashout-hh-bonus {
+    font-size: 0.875rem;
+    color: var(--success);
+}
+
+.cashout-hh-bonus strong {
+    color: var(--success);
+}
+
+/* High hand indicator in player list */
+.hh-indicator {
+    font-size: 0.7rem;
+    color: var(--gold);
+    margin-left: 0.25rem;
+}
+
 .cashout-result {
     display: flex;
     justify-content: space-between;
