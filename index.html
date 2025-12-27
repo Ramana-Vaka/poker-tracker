@@ -16,7 +16,21 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="app-container">
+    <!-- PIN Lock Screen -->
+    <div class="lock-screen" id="lockScreen">
+        <div class="lock-container">
+            <div class="lock-icon">🔒</div>
+            <h2 id="lockTitle">Enter PIN</h2>
+            <p id="lockSubtitle">Enter your 4-digit PIN to access</p>
+            <div class="pin-input-container">
+                <input type="password" id="pinInput" maxlength="4" pattern="[0-9]*" inputmode="numeric" placeholder="••••" autocomplete="off">
+            </div>
+            <button class="btn btn-primary btn-full" id="pinSubmitBtn">Unlock</button>
+            <p class="pin-error hidden" id="pinError">Incorrect PIN. Try again.</p>
+        </div>
+    </div>
+
+    <div class="app-container hidden" id="appContainer">
         <!-- Header -->
         <header class="header">
             <div class="logo">
@@ -149,6 +163,33 @@
             </aside>
         </main>
 
+        <!-- Initial Buy-in Modal -->
+        <div class="modal hidden" id="initialBuyinModal">
+            <div class="modal-content cashout-modal">
+                <div class="modal-header">
+                    <h2>💰 Initial Buy-in</h2>
+                    <button class="modal-close" id="closeInitialBuyinBtn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem;">Set the default buy-in amount for all players. Leave at 0 to skip.</p>
+                    <div class="form-group">
+                        <label>Buy-in Amount</label>
+                        <div class="input-with-prefix">
+                            <span class="prefix">$</span>
+                            <input type="number" id="initialBuyinAmount" placeholder="20" min="0" step="1" value="20">
+                        </div>
+                    </div>
+                    <div class="quick-amounts" style="margin-bottom: 1rem;">
+                        <button type="button" class="chip-btn" data-initial="10">$10</button>
+                        <button type="button" class="chip-btn" data-initial="20">$20</button>
+                        <button type="button" class="chip-btn" data-initial="50">$50</button>
+                        <button type="button" class="chip-btn" data-initial="100">$100</button>
+                    </div>
+                    <button class="btn btn-primary btn-full" id="confirmInitialBuyinBtn">Start Session</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Cash-out Modal -->
         <div class="modal hidden" id="cashoutModal">
             <div class="modal-content cashout-modal">
@@ -178,6 +219,28 @@
             </div>
         </div>
 
+        <!-- Reset PIN Modal -->
+        <div class="modal hidden" id="resetPinModal">
+            <div class="modal-content cashout-modal">
+                <div class="modal-header">
+                    <h2>🔑 Reset PIN</h2>
+                    <button class="modal-close" id="closeResetPinBtn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Current PIN</label>
+                        <input type="password" id="currentPinInput" maxlength="4" pattern="[0-9]*" inputmode="numeric" placeholder="••••">
+                    </div>
+                    <div class="form-group">
+                        <label>New PIN</label>
+                        <input type="password" id="newPinInput" maxlength="4" pattern="[0-9]*" inputmode="numeric" placeholder="••••">
+                    </div>
+                    <p class="pin-error hidden" id="resetPinError">Error message</p>
+                    <button class="btn btn-primary btn-full" id="confirmResetPinBtn">Update PIN</button>
+                </div>
+            </div>
+        </div>
+
         <!-- History Modal -->
         <div class="modal hidden" id="historyModal">
             <div class="modal-content">
@@ -196,6 +259,7 @@
             <button class="btn btn-ghost" id="viewHistoryBtn">📚 View History</button>
             <button class="btn btn-ghost" id="exportDataBtn">📤 Export Data</button>
             <button class="btn btn-ghost btn-danger-text" id="clearDataBtn">🗑️ Clear All Data</button>
+            <button class="btn btn-ghost" id="resetPinBtn">🔑 Reset PIN</button>
         </footer>
     </div>
 

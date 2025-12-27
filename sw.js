@@ -1,5 +1,5 @@
 // Service Worker for Poker Night Tracker
-const CACHE_NAME = 'poker-tracker-v5';
+const CACHE_NAME = 'poker-tracker-v8';
 const urlsToCache = [
   './',
   './index.html',

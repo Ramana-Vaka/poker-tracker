@@ -4,6 +4,92 @@
  */
 
 // ===========================
+// PIN Lock System
+// ===========================
+
+const PIN_STORAGE_KEY = 'poker_pin';
+
+function initPinLock() {
+    const lockScreen = document.getElementById('lockScreen');
+    const appContainer = document.getElementById('appContainer');
+    const pinInput = document.getElementById('pinInput');
+    const pinSubmitBtn = document.getElementById('pinSubmitBtn');
+    const pinError = document.getElementById('pinError');
+    const lockTitle = document.getElementById('lockTitle');
+    const lockSubtitle = document.getElementById('lockSubtitle');
+    
+    if (!lockScreen || !appContainer) return;
+    
+    const storedPin = localStorage.getItem(PIN_STORAGE_KEY);
+    
+    // If no PIN set, show setup mode
+    if (!storedPin) {
+        lockTitle.textContent = 'Set Your PIN';
+        lockSubtitle.textContent = 'Create a 4-digit PIN to secure your app';
+        pinSubmitBtn.textContent = 'Set PIN';
+    }
+    
+    pinSubmitBtn.addEventListener('click', handlePinSubmit);
+    pinInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handlePinSubmit();
+    });
+    
+    // Auto-focus PIN input
+    pinInput.focus();
+    
+    function handlePinSubmit() {
+        const enteredPin = pinInput.value;
+        
+        if (enteredPin.length !== 4 || !/^\d{4}$/.test(enteredPin)) {
+            showError('Please enter a 4-digit PIN');
+            return;
+        }
+        
+        if (!storedPin) {
+            // Setting new PIN
+            localStorage.setItem(PIN_STORAGE_KEY, hashPin(enteredPin));
+            unlockApp();
+        } else {
+            // Verifying PIN
+            if (hashPin(enteredPin) === storedPin) {
+                unlockApp();
+            } else {
+                showError('Incorrect PIN. Try again.');
+                pinInput.value = '';
+                pinInput.focus();
+            }
+        }
+    }
+    
+    function showError(msg) {
+        pinError.textContent = msg;
+        pinError.classList.remove('hidden');
+        setTimeout(() => pinError.classList.add('hidden'), 3000);
+    }
+    
+    function unlockApp() {
+        lockScreen.classList.add('hidden');
+        appContainer.classList.remove('hidden');
+        init(); // Initialize the main app
+    }
+    
+    function hashPin(pin) {
+        // Simple hash for basic protection (not cryptographically secure)
+        let hash = 0;
+        const str = pin + 'poker_salt_2024';
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash;
+        }
+        return hash.toString();
+    }
+}
+
+// Initialize PIN lock on page load
+document.addEventListener('DOMContentLoaded', initPinLock);
+
+// ===========================
 // State Management
 // ===========================
 
@@ -123,14 +209,36 @@ function setupEventListeners() {
     if (elements.cashoutAmountInput) elements.cashoutAmountInput.addEventListener('input', updateCashoutPreview);
     if (elements.confirmCashoutBtn) elements.confirmCashoutBtn.addEventListener('click', confirmCashout);
     
-    // Quick amount buttons
-    document.querySelectorAll('.chip-btn').forEach(btn => {
+    // Quick amount buttons for buy-in form
+    document.querySelectorAll('.chip-btn[data-amount]').forEach(btn => {
         btn.addEventListener('click', () => {
             if (elements.buyinAmount) {
                 elements.buyinAmount.value = btn.dataset.amount;
                 elements.buyinAmount.focus();
             }
         });
+    });
+    
+    // Quick amount buttons for initial buy-in modal
+    document.querySelectorAll('.chip-btn[data-initial]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const input = document.getElementById('initialBuyinAmount');
+            if (input) {
+                input.value = btn.dataset.initial;
+                input.focus();
+            }
+        });
+    });
+    
+    // Initial buy-in modal
+    const closeInitialBuyinBtn = document.getElementById('closeInitialBuyinBtn');
+    const confirmInitialBuyinBtn = document.getElementById('confirmInitialBuyinBtn');
+    const initialBuyinModal = document.getElementById('initialBuyinModal');
+    
+    if (closeInitialBuyinBtn) closeInitialBuyinBtn.addEventListener('click', hideInitialBuyinModal);
+    if (confirmInitialBuyinBtn) confirmInitialBuyinBtn.addEventListener('click', confirmInitialBuyin);
+    if (initialBuyinModal) initialBuyinModal.addEventListener('click', (e) => {
+        if (e.target === initialBuyinModal) hideInitialBuyinModal();
     });
     
     // Modal & Footer
@@ -141,6 +249,111 @@ function setupEventListeners() {
     });
     if (elements.exportDataBtn) elements.exportDataBtn.addEventListener('click', exportData);
     if (elements.clearDataBtn) elements.clearDataBtn.addEventListener('click', clearAllData);
+    
+    // Reset PIN
+    const resetPinBtn = document.getElementById('resetPinBtn');
+    if (resetPinBtn) resetPinBtn.addEventListener('click', resetPin);
+    
+    // Reset PIN modal
+    const closeResetPinBtn = document.getElementById('closeResetPinBtn');
+    const confirmResetPinBtn = document.getElementById('confirmResetPinBtn');
+    const resetPinModal = document.getElementById('resetPinModal');
+    
+    if (closeResetPinBtn) closeResetPinBtn.addEventListener('click', hideResetPinModal);
+    if (confirmResetPinBtn) confirmResetPinBtn.addEventListener('click', confirmResetPin);
+    if (resetPinModal) resetPinModal.addEventListener('click', (e) => {
+        if (e.target === resetPinModal) hideResetPinModal();
+    });
+}
+
+function resetPin() {
+    // Show reset PIN modal
+    showResetPinModal();
+}
+
+function showResetPinModal() {
+    const modal = document.getElementById('resetPinModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        const input = document.getElementById('currentPinInput');
+        if (input) {
+            input.value = '';
+            input.focus();
+        }
+    }
+}
+
+function hideResetPinModal() {
+    const modal = document.getElementById('resetPinModal');
+    if (modal) modal.classList.add('hidden');
+    // Clear inputs
+    const currentInput = document.getElementById('currentPinInput');
+    const newInput = document.getElementById('newPinInput');
+    if (currentInput) currentInput.value = '';
+    if (newInput) newInput.value = '';
+}
+
+function confirmResetPin() {
+    const currentPinInput = document.getElementById('currentPinInput');
+    const newPinInput = document.getElementById('newPinInput');
+    const resetPinError = document.getElementById('resetPinError');
+    
+    const currentPin = currentPinInput ? currentPinInput.value : '';
+    const newPin = newPinInput ? newPinInput.value : '';
+    
+    if (!/^\d{4}$/.test(currentPin)) {
+        if (resetPinError) {
+            resetPinError.textContent = 'Current PIN must be 4 digits';
+            resetPinError.classList.remove('hidden');
+        }
+        return;
+    }
+    
+    if (!/^\d{4}$/.test(newPin)) {
+        if (resetPinError) {
+            resetPinError.textContent = 'New PIN must be 4 digits';
+            resetPinError.classList.remove('hidden');
+        }
+        return;
+    }
+    
+    const storedPin = localStorage.getItem(PIN_STORAGE_KEY);
+    
+    // Hash the current PIN and compare
+    let hash = 0;
+    const str = currentPin + 'poker_salt_2024';
+    for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+    }
+    
+    if (hash.toString() !== storedPin) {
+        if (resetPinError) {
+            resetPinError.textContent = 'Current PIN is incorrect';
+            resetPinError.classList.remove('hidden');
+        }
+        return;
+    }
+    
+    // Hash and save new PIN
+    let newHash = 0;
+    const newStr = newPin + 'poker_salt_2024';
+    for (let i = 0; i < newStr.length; i++) {
+        const char = newStr.charCodeAt(i);
+        newHash = ((newHash << 5) - newHash) + char;
+        newHash = newHash & newHash;
+    }
+    localStorage.setItem(PIN_STORAGE_KEY, newHash.toString());
+    
+    hideResetPinModal();
+    
+    // Show success message
+    const successDiv = document.createElement('div');
+    successDiv.className = 'pin-success-toast';
+    successDiv.textContent = '✓ PIN updated successfully!';
+    document.body.appendChild(successDiv);
+    setTimeout(() => successDiv.remove(), 3000);
 }
 
 // ===========================
@@ -175,17 +388,30 @@ function loadFromStorage() {
 // ===========================
 
 function startSession() {
-    // Prompt for initial buy-in amount
-    const defaultBuyin = prompt('Enter initial buy-in amount for all players:\n(Leave empty to skip)', '20');
-    const initialBuyin = defaultBuyin ? parseFloat(defaultBuyin) : 0;
-    
-    if (defaultBuyin !== null && isNaN(initialBuyin)) {
-        alert('Please enter a valid number');
-        return;
+    // Show initial buy-in modal
+    showInitialBuyinModal();
+}
+
+function showInitialBuyinModal() {
+    const modal = document.getElementById('initialBuyinModal');
+    const input = document.getElementById('initialBuyinAmount');
+    if (modal) {
+        modal.classList.remove('hidden');
+        if (input) {
+            input.value = '20';
+            input.focus();
+        }
     }
-    
-    // If user clicked cancel, don't start session
-    if (defaultBuyin === null) return;
+}
+
+function hideInitialBuyinModal() {
+    const modal = document.getElementById('initialBuyinModal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function confirmInitialBuyin() {
+    const input = document.getElementById('initialBuyinAmount');
+    const initialBuyin = input ? parseFloat(input.value) || 0 : 0;
     
     state.currentSession = {
         id: Date.now(),
@@ -201,6 +427,7 @@ function startSession() {
     state.activities = [];
     state.highHands = [];
     
+    hideInitialBuyinModal();
     saveToStorage();
     renderAll();
     updateSessionUI(true);
@@ -846,5 +1073,5 @@ window.openCashoutModal = openCashoutModal;
 // Initialize App
 // ===========================
 
-document.addEventListener('DOMContentLoaded', init);
+// App is initialized after PIN unlock (see initPinLock function)
 
