@@ -3,91 +3,8 @@
  * A simple app to track buy-ins, cash-outs, and high hands for poker games
  */
 
-// ===========================
-// PIN Lock System
-// ===========================
-
-const PIN_STORAGE_KEY = 'poker_pin';
-
-function initPinLock() {
-    const lockScreen = document.getElementById('lockScreen');
-    const appContainer = document.getElementById('appContainer');
-    const pinInput = document.getElementById('pinInput');
-    const pinSubmitBtn = document.getElementById('pinSubmitBtn');
-    const pinError = document.getElementById('pinError');
-    const lockTitle = document.getElementById('lockTitle');
-    const lockSubtitle = document.getElementById('lockSubtitle');
-    
-    if (!lockScreen || !appContainer) return;
-    
-    const storedPin = localStorage.getItem(PIN_STORAGE_KEY);
-    
-    // If no PIN set, show setup mode
-    if (!storedPin) {
-        lockTitle.textContent = 'Set Your PIN';
-        lockSubtitle.textContent = 'Create a 4-digit PIN to secure your app';
-        pinSubmitBtn.textContent = 'Set PIN';
-    }
-    
-    pinSubmitBtn.addEventListener('click', handlePinSubmit);
-    pinInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') handlePinSubmit();
-    });
-    
-    // Auto-focus PIN input
-    pinInput.focus();
-    
-    function handlePinSubmit() {
-        const enteredPin = pinInput.value;
-        
-        if (enteredPin.length !== 4 || !/^\d{4}$/.test(enteredPin)) {
-            showError('Please enter a 4-digit PIN');
-            return;
-        }
-        
-        if (!storedPin) {
-            // Setting new PIN
-            localStorage.setItem(PIN_STORAGE_KEY, hashPin(enteredPin));
-            unlockApp();
-        } else {
-            // Verifying PIN
-            if (hashPin(enteredPin) === storedPin) {
-                unlockApp();
-            } else {
-                showError('Incorrect PIN. Try again.');
-                pinInput.value = '';
-                pinInput.focus();
-            }
-        }
-    }
-    
-    function showError(msg) {
-        pinError.textContent = msg;
-        pinError.classList.remove('hidden');
-        setTimeout(() => pinError.classList.add('hidden'), 3000);
-    }
-    
-    function unlockApp() {
-        lockScreen.classList.add('hidden');
-        appContainer.classList.remove('hidden');
-        init(); // Initialize the main app
-    }
-    
-    function hashPin(pin) {
-        // Simple hash for basic protection (not cryptographically secure)
-        let hash = 0;
-        const str = pin + 'poker_salt_2024';
-        for (let i = 0; i < str.length; i++) {
-            const char = str.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash;
-        }
-        return hash.toString();
-    }
-}
-
-// Initialize PIN lock on page load
-document.addEventListener('DOMContentLoaded', initPinLock);
+// Initialize app on page load
+document.addEventListener('DOMContentLoaded', init);
 
 // ===========================
 // State Management
@@ -152,10 +69,20 @@ function initElements() {
         highHandType: document.getElementById('highHandType'),
         highHandCards: document.getElementById('highHandCards'),
         highHandBonus: document.getElementById('highHandBonus'),
+        bonus5Btn: document.getElementById('bonus5Btn'),
+        bonus10Btn: document.getElementById('bonus10Btn'),
+        bonus5Calc: document.getElementById('bonus5Calc'),
+        bonus5Total: document.getElementById('bonus5Total'),
+        bonus10Calc: document.getElementById('bonus10Calc'),
+        bonus10Total: document.getElementById('bonus10Total'),
         
         // High Hands & Activity
         highHandsList: document.getElementById('highHandsList'),
         activityList: document.getElementById('activityList'),
+        
+        // Settlement
+        settlementSection: document.getElementById('settlementSection'),
+        settlementContent: document.getElementById('settlementContent'),
         
         // Modal & Footer
         historyModal: document.getElementById('historyModal'),
@@ -219,6 +146,14 @@ function setupEventListeners() {
         });
     });
     
+    // Bonus amount buttons for high hand
+    if (elements.bonus5Btn) {
+        elements.bonus5Btn.addEventListener('click', () => selectBonusAmount(5));
+    }
+    if (elements.bonus10Btn) {
+        elements.bonus10Btn.addEventListener('click', () => selectBonusAmount(10));
+    }
+    
     // Quick amount buttons for initial buy-in modal
     document.querySelectorAll('.chip-btn[data-initial]').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -249,111 +184,6 @@ function setupEventListeners() {
     });
     if (elements.exportDataBtn) elements.exportDataBtn.addEventListener('click', exportData);
     if (elements.clearDataBtn) elements.clearDataBtn.addEventListener('click', clearAllData);
-    
-    // Reset PIN
-    const resetPinBtn = document.getElementById('resetPinBtn');
-    if (resetPinBtn) resetPinBtn.addEventListener('click', resetPin);
-    
-    // Reset PIN modal
-    const closeResetPinBtn = document.getElementById('closeResetPinBtn');
-    const confirmResetPinBtn = document.getElementById('confirmResetPinBtn');
-    const resetPinModal = document.getElementById('resetPinModal');
-    
-    if (closeResetPinBtn) closeResetPinBtn.addEventListener('click', hideResetPinModal);
-    if (confirmResetPinBtn) confirmResetPinBtn.addEventListener('click', confirmResetPin);
-    if (resetPinModal) resetPinModal.addEventListener('click', (e) => {
-        if (e.target === resetPinModal) hideResetPinModal();
-    });
-}
-
-function resetPin() {
-    // Show reset PIN modal
-    showResetPinModal();
-}
-
-function showResetPinModal() {
-    const modal = document.getElementById('resetPinModal');
-    if (modal) {
-        modal.classList.remove('hidden');
-        const input = document.getElementById('currentPinInput');
-        if (input) {
-            input.value = '';
-            input.focus();
-        }
-    }
-}
-
-function hideResetPinModal() {
-    const modal = document.getElementById('resetPinModal');
-    if (modal) modal.classList.add('hidden');
-    // Clear inputs
-    const currentInput = document.getElementById('currentPinInput');
-    const newInput = document.getElementById('newPinInput');
-    if (currentInput) currentInput.value = '';
-    if (newInput) newInput.value = '';
-}
-
-function confirmResetPin() {
-    const currentPinInput = document.getElementById('currentPinInput');
-    const newPinInput = document.getElementById('newPinInput');
-    const resetPinError = document.getElementById('resetPinError');
-    
-    const currentPin = currentPinInput ? currentPinInput.value : '';
-    const newPin = newPinInput ? newPinInput.value : '';
-    
-    if (!/^\d{4}$/.test(currentPin)) {
-        if (resetPinError) {
-            resetPinError.textContent = 'Current PIN must be 4 digits';
-            resetPinError.classList.remove('hidden');
-        }
-        return;
-    }
-    
-    if (!/^\d{4}$/.test(newPin)) {
-        if (resetPinError) {
-            resetPinError.textContent = 'New PIN must be 4 digits';
-            resetPinError.classList.remove('hidden');
-        }
-        return;
-    }
-    
-    const storedPin = localStorage.getItem(PIN_STORAGE_KEY);
-    
-    // Hash the current PIN and compare
-    let hash = 0;
-    const str = currentPin + 'poker_salt_2024';
-    for (let i = 0; i < str.length; i++) {
-        const char = str.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash;
-    }
-    
-    if (hash.toString() !== storedPin) {
-        if (resetPinError) {
-            resetPinError.textContent = 'Current PIN is incorrect';
-            resetPinError.classList.remove('hidden');
-        }
-        return;
-    }
-    
-    // Hash and save new PIN
-    let newHash = 0;
-    const newStr = newPin + 'poker_salt_2024';
-    for (let i = 0; i < newStr.length; i++) {
-        const char = newStr.charCodeAt(i);
-        newHash = ((newHash << 5) - newHash) + char;
-        newHash = newHash & newHash;
-    }
-    localStorage.setItem(PIN_STORAGE_KEY, newHash.toString());
-    
-    hideResetPinModal();
-    
-    // Show success message
-    const successDiv = document.createElement('div');
-    successDiv.className = 'pin-success-toast';
-    successDiv.textContent = '✓ PIN updated successfully!';
-    document.body.appendChild(successDiv);
-    setTimeout(() => successDiv.remove(), 3000);
 }
 
 // ===========================
@@ -807,7 +637,9 @@ function renderAll() {
     renderPlayerSelects();
     renderHighHands();
     renderActivity();
+    renderSettlement();
     updateTotalPot();
+    updateBonusButtons();
 }
 
 function renderPlayers() {
@@ -940,6 +772,198 @@ function renderActivity() {
 function updateTotalPot() {
     const total = calculateTotalPot();
     elements.totalPot.textContent = `$${total}`;
+}
+
+// ===========================
+// Bonus Buttons
+// ===========================
+
+function updateBonusButtons() {
+    const playerCount = state.players.length;
+    
+    if (elements.bonus5Calc) {
+        elements.bonus5Calc.textContent = `${playerCount} × $5`;
+    }
+    if (elements.bonus5Total) {
+        elements.bonus5Total.textContent = `= $${playerCount * 5}`;
+    }
+    if (elements.bonus10Calc) {
+        elements.bonus10Calc.textContent = `${playerCount} × $10`;
+    }
+    if (elements.bonus10Total) {
+        elements.bonus10Total.textContent = `= $${playerCount * 10}`;
+    }
+}
+
+function selectBonusAmount(multiplier) {
+    const playerCount = state.players.length;
+    const amount = playerCount * multiplier;
+    
+    if (elements.highHandBonus) {
+        elements.highHandBonus.value = amount;
+    }
+    
+    // Visual feedback - highlight selected button
+    if (elements.bonus5Btn) elements.bonus5Btn.classList.remove('selected');
+    if (elements.bonus10Btn) elements.bonus10Btn.classList.remove('selected');
+    
+    if (multiplier === 5 && elements.bonus5Btn) {
+        elements.bonus5Btn.classList.add('selected');
+    } else if (multiplier === 10 && elements.bonus10Btn) {
+        elements.bonus10Btn.classList.add('selected');
+    }
+}
+
+// ===========================
+// Settlement Section
+// ===========================
+
+function renderSettlement() {
+    if (!elements.settlementSection || !elements.settlementContent) {
+        return;
+    }
+    
+    // Only show if there are players with activity
+    const hasActivity = state.players.some(p => p.totalBuyin > 0);
+    
+    if (!hasActivity) {
+        elements.settlementSection.classList.add('hidden');
+        elements.settlementContent.innerHTML = '';
+        return;
+    }
+    
+    elements.settlementSection.classList.remove('hidden');
+    
+    const totalPot = calculateTotalPot();
+    
+    // Calculate each player's profit/loss
+    const playerResults = state.players.map(player => {
+        const highHandBonus = getPlayerHighHandBonus(player.id);
+        
+        if (player.cashout) {
+            const bonus = player.cashout.highHandBonus || highHandBonus;
+            const profit = (player.cashout.amount + bonus) - player.totalBuyin;
+            return {
+                name: player.name,
+                profit: profit,
+                cashedOut: true,
+                cashoutAmount: player.cashout.amount,
+                highHandBonus: bonus
+            };
+        } else {
+            // Not cashed out yet - show as pending
+            return {
+                name: player.name,
+                profit: null,
+                cashedOut: false,
+                totalBuyin: player.totalBuyin,
+                highHandBonus: highHandBonus
+            };
+        }
+    });
+    
+    // Separate into winners, losers, and pending
+    const winners = playerResults.filter(p => p.cashedOut && p.profit > 0).sort((a, b) => b.profit - a.profit);
+    const losers = playerResults.filter(p => p.cashedOut && p.profit < 0).sort((a, b) => a.profit - b.profit);
+    const even = playerResults.filter(p => p.cashedOut && p.profit === 0);
+    const pending = playerResults.filter(p => !p.cashedOut && p.totalBuyin > 0);
+    
+    // Calculate totals
+    const totalWinnings = winners.reduce((sum, p) => sum + p.profit, 0);
+    const totalLosses = Math.abs(losers.reduce((sum, p) => sum + p.profit, 0));
+    const isBalanced = Math.abs(totalWinnings - totalLosses) < 0.01;
+    
+    let html = `
+        <div class="settlement-pot">
+            <div class="settlement-pot-label">Total Pot</div>
+            <div class="settlement-pot-value">$${totalPot}</div>
+        </div>
+    `;
+    
+    // Winners section
+    if (winners.length > 0) {
+        html += `
+            <div class="settlement-group">
+                <div class="settlement-group-header winners">
+                    🟢 WINNERS (+$${totalWinnings})
+                </div>
+                ${winners.map(p => `
+                    <div class="settlement-player">
+                        <span class="settlement-player-name">${escapeHtml(p.name)}${p.highHandBonus > 0 ? ' 🏆' : ''}</span>
+                        <span class="settlement-player-amount profit">+$${p.profit}</span>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+    
+    // Even section
+    if (even.length > 0) {
+        html += `
+            <div class="settlement-group">
+                <div class="settlement-group-header" style="color: var(--text-muted)">
+                    ⚪ EVEN
+                </div>
+                ${even.map(p => `
+                    <div class="settlement-player">
+                        <span class="settlement-player-name">${escapeHtml(p.name)}</span>
+                        <span class="settlement-player-amount" style="color: var(--text-muted)">$0</span>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+    
+    // Losers section
+    if (losers.length > 0) {
+        html += `
+            <div class="settlement-group">
+                <div class="settlement-group-header losers">
+                    🔴 OWES (-$${totalLosses})
+                </div>
+                ${losers.map(p => `
+                    <div class="settlement-player">
+                        <span class="settlement-player-name">${escapeHtml(p.name)}</span>
+                        <span class="settlement-player-amount loss">-$${Math.abs(p.profit)}</span>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+    
+    // Pending section
+    if (pending.length > 0) {
+        html += `
+            <div class="settlement-group">
+                <div class="settlement-group-header pending">
+                    ⏳ NOT CASHED OUT
+                </div>
+                ${pending.map(p => `
+                    <div class="settlement-player">
+                        <span class="settlement-player-name">${escapeHtml(p.name)}${p.highHandBonus > 0 ? ' 🏆' : ''}</span>
+                        <span class="settlement-player-amount pending">$${p.totalBuyin} in play</span>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+    
+    // Balance check (only show if someone has cashed out)
+    if (winners.length > 0 || losers.length > 0) {
+        const balanceClass = isBalanced ? 'balanced' : 'unbalanced';
+        const balanceText = isBalanced 
+            ? '✓ Balanced' 
+            : `⚠ Unbalanced (${pending.length} pending)`;
+        
+        html += `
+            <div class="settlement-balance">
+                <span class="settlement-balance-label">Verification</span>
+                <span class="settlement-balance-check ${balanceClass}">${balanceText}</span>
+            </div>
+        `;
+    }
+    
+    elements.settlementContent.innerHTML = html;
 }
 
 // ===========================

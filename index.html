@@ -16,21 +16,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- PIN Lock Screen -->
-    <div class="lock-screen" id="lockScreen">
-        <div class="lock-container">
-            <div class="lock-icon">🔒</div>
-            <h2 id="lockTitle">Enter PIN</h2>
-            <p id="lockSubtitle">Enter your 4-digit PIN to access</p>
-            <div class="pin-input-container">
-                <input type="password" id="pinInput" maxlength="4" pattern="[0-9]*" inputmode="numeric" placeholder="••••" autocomplete="off">
-            </div>
-            <button class="btn btn-primary btn-full" id="pinSubmitBtn">Unlock</button>
-            <p class="pin-error hidden" id="pinError">Incorrect PIN. Try again.</p>
-        </div>
-    </div>
-
-    <div class="app-container hidden" id="appContainer">
+    <div class="app-container" id="appContainer">
         <!-- Header -->
         <header class="header">
             <div class="logo">
@@ -91,10 +77,10 @@
                             </div>
                         </div>
                         <div class="quick-amounts">
+                            <button type="button" class="chip-btn" data-amount="2">$2</button>
+                            <button type="button" class="chip-btn" data-amount="5">$5</button>
+                            <button type="button" class="chip-btn" data-amount="10">$10</button>
                             <button type="button" class="chip-btn" data-amount="20">$20</button>
-                            <button type="button" class="chip-btn" data-amount="50">$50</button>
-                            <button type="button" class="chip-btn" data-amount="100">$100</button>
-                            <button type="button" class="chip-btn" data-amount="200">$200</button>
                         </div>
                         <button type="submit" class="btn btn-primary btn-full">Record Buy-in</button>
                     </form>
@@ -125,17 +111,25 @@
                                 <option value="One Pair">☝️ One Pair</option>
                             </select>
                         </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Cards (optional)</label>
-                                <input type="text" id="highHandCards" placeholder="e.g., A♠ K♠ Q♠ J♠ 10♠">
+                        <div class="form-group">
+                            <label>Cards (optional)</label>
+                            <input type="text" id="highHandCards" placeholder="e.g., A♠ K♠ Q♠ J♠ 10♠">
+                        </div>
+                        <div class="form-group">
+                            <label>Bonus $</label>
+                            <div class="bonus-options" id="bonusOptions">
+                                <button type="button" class="bonus-btn" id="bonus5Btn" data-multiplier="5">
+                                    <span class="bonus-calc" id="bonus5Calc">0 × $5</span>
+                                    <span class="bonus-total" id="bonus5Total">= $0</span>
+                                </button>
+                                <button type="button" class="bonus-btn" id="bonus10Btn" data-multiplier="10">
+                                    <span class="bonus-calc" id="bonus10Calc">0 × $10</span>
+                                    <span class="bonus-total" id="bonus10Total">= $0</span>
+                                </button>
                             </div>
-                            <div class="form-group">
-                                <label>Bonus $</label>
-                                <div class="input-with-prefix">
-                                    <span class="prefix">$</span>
-                                    <input type="number" id="highHandBonus" placeholder="0" min="0" step="1">
-                                </div>
+                            <div class="input-with-prefix bonus-custom">
+                                <span class="prefix">$</span>
+                                <input type="number" id="highHandBonus" placeholder="Custom amount" min="0" step="1">
                             </div>
                         </div>
                         <button type="submit" class="btn btn-gold btn-full">Record High Hand</button>
@@ -145,6 +139,14 @@
 
             <!-- Right Panel - Activity & Stats -->
             <aside class="right-panel">
+                <!-- Settlement Section -->
+                <section class="card settlement-section hidden" id="settlementSection">
+                    <h2><span class="icon">💰</span> Settlement</h2>
+                    <div class="settlement-content" id="settlementContent">
+                        <!-- Populated by JS -->
+                    </div>
+                </section>
+
                 <!-- High Hands -->
                 <section class="card high-hands-section">
                     <h2><span class="icon">🏆</span> High Hands</h2>
@@ -219,28 +221,6 @@
             </div>
         </div>
 
-        <!-- Reset PIN Modal -->
-        <div class="modal hidden" id="resetPinModal">
-            <div class="modal-content cashout-modal">
-                <div class="modal-header">
-                    <h2>🔑 Reset PIN</h2>
-                    <button class="modal-close" id="closeResetPinBtn">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label>Current PIN</label>
-                        <input type="password" id="currentPinInput" maxlength="4" pattern="[0-9]*" inputmode="numeric" placeholder="••••">
-                    </div>
-                    <div class="form-group">
-                        <label>New PIN</label>
-                        <input type="password" id="newPinInput" maxlength="4" pattern="[0-9]*" inputmode="numeric" placeholder="••••">
-                    </div>
-                    <p class="pin-error hidden" id="resetPinError">Error message</p>
-                    <button class="btn btn-primary btn-full" id="confirmResetPinBtn">Update PIN</button>
-                </div>
-            </div>
-        </div>
-
         <!-- History Modal -->
         <div class="modal hidden" id="historyModal">
             <div class="modal-content">
@@ -259,7 +239,6 @@
             <button class="btn btn-ghost" id="viewHistoryBtn">📚 View History</button>
             <button class="btn btn-ghost" id="exportDataBtn">📤 Export Data</button>
             <button class="btn btn-ghost btn-danger-text" id="clearDataBtn">🗑️ Clear All Data</button>
-            <button class="btn btn-ghost" id="resetPinBtn">🔑 Reset PIN</button>
         </footer>
     </div>
 
