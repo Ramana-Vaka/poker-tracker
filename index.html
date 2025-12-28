@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#1a8754">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0a0e13">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Poker Night">
@@ -13,210 +13,245 @@
     <link rel="apple-touch-icon" href="icons/icon-192.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="app-container" id="appContainer">
+    <div class="app">
         <!-- Header -->
         <header class="header">
-            <div class="logo">
-                <span class="logo-icon">♠♥♦♣</span>
+            <div class="header-left">
+                <span class="logo">♠♥♦♣</span>
                 <h1>Poker Night</h1>
             </div>
-            <div class="session-indicator" id="sessionIndicator">
-                <span class="pulse"></span>
-                <span class="session-text">No Active Session</span>
+            <div class="header-right">
+                <div class="session-badge" id="sessionBadge">
+                    <span class="pulse"></span>
+                    <span id="sessionStatus">No Session</span>
+                </div>
             </div>
         </header>
 
-        <!-- Main Content -->
+        <!-- Quick Stats Bar -->
+        <div class="stats-bar" id="statsBar">
+            <div class="stat">
+                <span class="stat-label">Players</span>
+                <span class="stat-value" id="playerCount">0</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Pot</span>
+                <span class="stat-value gold" id="totalPot">$0</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Time</span>
+                <span class="stat-value" id="sessionTime">0:00</span>
+            </div>
+            <button class="btn-icon" id="sessionToggleBtn" title="Start Session">▶</button>
+        </div>
+
+        <!-- Add Player Bar -->
+        <div class="add-player-bar" id="addPlayerBar">
+            <input type="text" id="playerNameInput" placeholder="Enter player name..." maxlength="15">
+            <button class="btn-add-player" id="addPlayerBtn">
+                <span>+</span> Add
+            </button>
+        </div>
+
+        <!-- Main Content Area -->
         <main class="main-content">
-            <!-- Left Panel - Session & Players -->
-            <aside class="left-panel">
-                <!-- Session Control - Compact -->
-                <div class="session-bar">
-                    <button class="btn btn-primary btn-sm" id="startSessionBtn">▶ Start</button>
-                    <button class="btn btn-danger btn-sm hidden" id="endSessionBtn">⏹ End</button>
-                    <div class="session-stats hidden" id="sessionInfo">
-                        <span class="stat-item" id="sessionDuration">0:00</span>
-                        <span class="stat-divider">|</span>
-                        <span class="stat-item pot" id="totalPot">$0</span>
-                    </div>
+            <!-- Background Pattern -->
+            <div class="bg-pattern"></div>
+            
+            <!-- Tab: Players -->
+            <section class="tab-content" id="tabPlayers">
+                <div class="section-header">
+                    <h2>Players</h2>
+                    <span class="player-count-badge" id="playerCountBadge">0 players</span>
                 </div>
+                <ul class="players-list" id="playersList">
+                    <li class="empty-state">Start a session to add players</li>
+                </ul>
+            </section>
 
-                <!-- Players -->
-                <section class="card players-section">
-                    <h2><span class="icon">👥</span> Players</h2>
-                    <div class="add-player-form">
-                        <input type="text" id="playerNameInput" placeholder="Player name..." maxlength="20">
-                        <button class="btn btn-accent" id="addPlayerBtn">+</button>
+            <!-- Tab: Buy-in -->
+            <section class="tab-content hidden" id="tabBuyin">
+                <div class="section-header">
+                    <h2>Record Buy-in</h2>
+                </div>
+                <form class="compact-form" id="buyinForm">
+                    <select id="buyinPlayer" required>
+                        <option value="">Select player...</option>
+                    </select>
+                    <div class="amount-input">
+                        <span class="currency">$</span>
+                        <input type="number" id="buyinAmount" placeholder="0" min="1" required>
                     </div>
-                    <ul class="players-list" id="playersList">
-                        <li class="empty-state">Start a session to add players</li>
+                    <div class="quick-btns">
+                        <button type="button" class="chip" data-amount="2">$2</button>
+                        <button type="button" class="chip" data-amount="5">$5</button>
+                        <button type="button" class="chip" data-amount="10">$10</button>
+                        <button type="button" class="chip" data-amount="20">$20</button>
+                    </div>
+                    <button type="submit" class="btn-primary">Record Buy-in</button>
+                </form>
+                
+                <!-- Recent Buy-ins -->
+                <div class="recent-activity">
+                    <h3>Recent</h3>
+                    <ul class="activity-list" id="activityList">
+                        <li class="empty-state">No buy-ins yet</li>
                     </ul>
-                </section>
-            </aside>
-
-            <!-- Center Panel - Main Actions -->
-            <section class="center-panel">
-                <!-- Buy-in Section -->
-                <div class="card action-card buyin-card">
-                    <h2><span class="icon">💰</span> Record Buy-in</h2>
-                    <form class="action-form" id="buyinForm">
-                        <div class="form-group">
-                            <label>Player</label>
-                            <select id="buyinPlayer" required>
-                                <option value="">Select player...</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Amount</label>
-                            <div class="input-with-prefix">
-                                <span class="prefix">$</span>
-                                <input type="number" id="buyinAmount" placeholder="0" min="1" step="1" required>
-                            </div>
-                        </div>
-                        <div class="quick-amounts">
-                            <button type="button" class="chip-btn" data-amount="2">$2</button>
-                            <button type="button" class="chip-btn" data-amount="5">$5</button>
-                            <button type="button" class="chip-btn" data-amount="10">$10</button>
-                            <button type="button" class="chip-btn" data-amount="20">$20</button>
-                        </div>
-                        <button type="submit" class="btn btn-primary btn-full">Record Buy-in</button>
-                    </form>
-                </div>
-
-                <!-- High Hand Section -->
-                <div class="card action-card high-hand-card">
-                    <h2><span class="icon">🃏</span> Record High Hand</h2>
-                    <form class="action-form" id="highHandForm">
-                        <div class="form-group">
-                            <label>Player</label>
-                            <select id="highHandPlayer" required>
-                                <option value="">Select player...</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Hand</label>
-                            <select id="highHandType" required>
-                                <option value="">Select hand...</option>
-                                <option value="Royal Flush">👑 Royal Flush</option>
-                                <option value="Straight Flush">🔥 Straight Flush</option>
-                                <option value="Four of a Kind">4️⃣ Four of a Kind</option>
-                                <option value="Full House">🏠 Full House</option>
-                                <option value="Flush">♠️ Flush</option>
-                                <option value="Straight">➡️ Straight</option>
-                                <option value="Three of a Kind">3️⃣ Three of a Kind</option>
-                                <option value="Two Pair">✌️ Two Pair</option>
-                                <option value="One Pair">☝️ One Pair</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Cards (optional)</label>
-                            <input type="text" id="highHandCards" placeholder="e.g., A♠ K♠ Q♠ J♠ 10♠">
-                        </div>
-                        <div class="form-group">
-                            <label>Bonus $</label>
-                            <div class="bonus-options" id="bonusOptions">
-                                <button type="button" class="bonus-btn" id="bonus5Btn" data-multiplier="5">
-                                    <span class="bonus-calc" id="bonus5Calc">0 × $5</span>
-                                    <span class="bonus-total" id="bonus5Total">= $0</span>
-                                </button>
-                                <button type="button" class="bonus-btn" id="bonus10Btn" data-multiplier="10">
-                                    <span class="bonus-calc" id="bonus10Calc">0 × $10</span>
-                                    <span class="bonus-total" id="bonus10Total">= $0</span>
-                                </button>
-                            </div>
-                            <div class="input-with-prefix bonus-custom">
-                                <span class="prefix">$</span>
-                                <input type="number" id="highHandBonus" placeholder="Custom amount" min="0" step="1">
-                            </div>
-                        </div>
-                        <button type="submit" class="btn btn-gold btn-full">Record High Hand</button>
-                    </form>
                 </div>
             </section>
 
-            <!-- Right Panel - Activity & Stats -->
-            <aside class="right-panel">
-                <!-- Settlement Section -->
-                <section class="card settlement-section hidden" id="settlementSection">
-                    <h2><span class="icon">💰</span> Settlement</h2>
-                    <div class="settlement-content" id="settlementContent">
-                        <!-- Populated by JS -->
+            <!-- Tab: High Hand -->
+            <section class="tab-content hidden" id="tabHighHand">
+                <div class="section-header">
+                    <h2>Record High Hand</h2>
+                </div>
+                <form class="compact-form" id="highHandForm">
+                    <select id="highHandPlayer" required>
+                        <option value="">Select player...</option>
+                    </select>
+                    <div class="hand-buttons">
+                        <button type="button" class="hand-btn" data-hand="Full House">🏠 Full House</button>
+                        <button type="button" class="hand-btn" data-hand="Four of a Kind">4️⃣ Quads</button>
+                        <button type="button" class="hand-btn" data-hand="Straight Flush">🔥 Str. Flush</button>
+                        <button type="button" class="hand-btn" data-hand="Royal Flush">👑 Royal</button>
                     </div>
-                </section>
+                    <input type="hidden" id="highHandType" value="">
+                    <input type="text" id="highHandCards" class="cards-input" placeholder="Cards: A♠ K♠ Q♠ J♠ 10♠">
+                    <div class="bonus-section">
+                        <span class="bonus-label">Bonus:</span>
+                        <div class="bonus-btns">
+                            <button type="button" class="bonus-btn" id="bonus5Btn">
+                                <span id="bonus5Text">0×$5</span>
+                            </button>
+                            <button type="button" class="bonus-btn" id="bonus10Btn">
+                                <span id="bonus10Text">0×$10</span>
+                            </button>
+                        </div>
+                        <div class="amount-input small">
+                            <span class="currency">$</span>
+                            <input type="number" id="highHandBonus" placeholder="Custom" min="0">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-gold">Record High Hand</button>
+                </form>
 
-                <!-- High Hands -->
-                <section class="card high-hands-section">
-                    <h2><span class="icon">🏆</span> High Hands</h2>
-                    <ul class="high-hands-list" id="highHandsList">
-                        <li class="empty-state">No high hands recorded</li>
-                    </ul>
-                </section>
+                <!-- Current High Hand -->
+                <div class="current-hh" id="currentHighHand">
+                    <h3>🏆 Current Winner</h3>
+                    <div class="hh-display" id="hhDisplay">
+                        <span class="empty-state">No high hand yet</span>
+                    </div>
+                </div>
+            </section>
 
-                <!-- Buy-ins Feed -->
-                <section class="card activity-section">
-                    <h2><span class="icon">💵</span> Buy-ins</h2>
-                    <ul class="activity-list" id="activityList">
-                        <li class="empty-state">No buy-ins recorded yet</li>
-                    </ul>
-                </section>
-            </aside>
+            <!-- Tab: Settlement -->
+            <section class="tab-content hidden" id="tabSettlement">
+                <div class="settle-header">
+                    <span class="settle-title">Settlement</span>
+                    <span class="settle-stats">
+                        <span class="settle-pot-inline">💰 <strong id="settlePotValue">$0</strong></span>
+                        <span class="settle-divider">•</span>
+                        <span id="settlePlayerCount">0 players</span>
+                    </span>
+                </div>
+                
+                <!-- Results: Winners -->
+                <div class="settle-group winners" id="settleWinners">
+                    <!-- Dynamic content -->
+                </div>
+                
+                <!-- Results: Losers -->
+                <div class="settle-group losers" id="settleLosers">
+                    <!-- Dynamic content -->
+                </div>
+                
+                <!-- Pending Cash-outs -->
+                <div class="settle-pending" id="settlePending">
+                    <div class="settle-pending-header">
+                        <span>⏳ Cash Out</span>
+                        <span class="settle-pending-count" id="settlePendingCount">0 remaining</span>
+                    </div>
+                    <div class="settle-pending-list" id="settlePendingList">
+                        <!-- Dynamic content -->
+                    </div>
+                </div>
+                
+                <!-- Balance Check -->
+                <div class="settle-balance" id="settleBalance">
+                    <!-- Dynamic content -->
+                </div>
+            </section>
         </main>
 
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav">
+            <button class="nav-btn active" data-tab="tabPlayers">
+                <span class="nav-icon">👥</span>
+                <span class="nav-label">Players</span>
+            </button>
+            <button class="nav-btn" data-tab="tabBuyin">
+                <span class="nav-icon">💰</span>
+                <span class="nav-label">Buy-in</span>
+            </button>
+            <button class="nav-btn" data-tab="tabHighHand">
+                <span class="nav-icon">🃏</span>
+                <span class="nav-label">High Hand</span>
+            </button>
+            <button class="nav-btn" data-tab="tabSettlement">
+                <span class="nav-icon">📊</span>
+                <span class="nav-label">Settle</span>
+            </button>
+        </nav>
+
+        <!-- Modals -->
         <!-- Initial Buy-in Modal -->
         <div class="modal hidden" id="initialBuyinModal">
-            <div class="modal-content cashout-modal">
+            <div class="modal-content">
                 <div class="modal-header">
-                    <h2>💰 Initial Buy-in</h2>
+                    <h2>Start Session</h2>
                     <button class="modal-close" id="closeInitialBuyinBtn">&times;</button>
                 </div>
                 <div class="modal-body">
-                    <p style="color: var(--text-secondary); margin-bottom: 1rem;">Set the default buy-in amount for all players. Leave at 0 to skip.</p>
-                    <div class="form-group">
-                        <label>Buy-in Amount</label>
-                        <div class="input-with-prefix">
-                            <span class="prefix">$</span>
-                            <input type="number" id="initialBuyinAmount" placeholder="20" min="0" step="1" value="20">
-                        </div>
+                    <p class="modal-hint">Set default buy-in for new players:</p>
+                    <div class="amount-input large">
+                        <span class="currency">$</span>
+                        <input type="number" id="initialBuyinAmount" value="20" min="0">
                     </div>
-                    <div class="quick-amounts" style="margin-bottom: 1rem;">
-                        <button type="button" class="chip-btn" data-initial="10">$10</button>
-                        <button type="button" class="chip-btn" data-initial="20">$20</button>
-                        <button type="button" class="chip-btn" data-initial="50">$50</button>
-                        <button type="button" class="chip-btn" data-initial="100">$100</button>
+                    <div class="quick-btns">
+                        <button type="button" class="chip" data-initial="5">$5</button>
+                        <button type="button" class="chip" data-initial="10">$10</button>
+                        <button type="button" class="chip" data-initial="20">$20</button>
+                        <button type="button" class="chip" data-initial="50">$50</button>
                     </div>
-                    <button class="btn btn-primary btn-full" id="confirmInitialBuyinBtn">Start Session</button>
+                    <button class="btn-primary full" id="confirmInitialBuyinBtn">Start Session</button>
                 </div>
             </div>
         </div>
 
         <!-- Cash-out Modal -->
         <div class="modal hidden" id="cashoutModal">
-            <div class="modal-content cashout-modal">
+            <div class="modal-content">
                 <div class="modal-header">
-                    <h2>💵 Cash Out</h2>
+                    <h2>Cash Out</h2>
                     <button class="modal-close" id="closeCashoutBtn">&times;</button>
                 </div>
                 <div class="modal-body">
-                    <div class="cashout-player-info">
-                        <span class="cashout-player-name" id="cashoutPlayerName">Player</span>
-                        <span class="cashout-total-buyin">Total Buy-in: <strong id="cashoutTotalBuyin">$0</strong></span>
-                        <span class="cashout-hh-bonus hidden">🏆 High Hand Bonus: <strong id="cashoutHighHandBonus">$0</strong></span>
+                    <div class="cashout-info">
+                        <span class="cashout-name" id="cashoutPlayerName">Player</span>
+                        <span class="cashout-buyin">Buy-in: <strong id="cashoutTotalBuyin">$0</strong></span>
+                        <span class="cashout-bonus hidden" id="cashoutBonusLine">🏆 Bonus: <strong id="cashoutHighHandBonus">$0</strong></span>
                     </div>
-                    <div class="form-group">
-                        <label>Final Stack (cash out amount)</label>
-                        <div class="input-with-prefix">
-                            <span class="prefix">$</span>
-                            <input type="number" id="cashoutAmountInput" placeholder="0" min="0" step="1">
-                        </div>
+                    <div class="amount-input large">
+                        <span class="currency">$</span>
+                        <input type="number" id="cashoutAmountInput" placeholder="Final stack" min="0">
                     </div>
                     <div class="cashout-result hidden" id="cashoutResult">
-                        <span class="result-label">Result:</span>
-                        <span class="result-value" id="cashoutResultValue">$0</span>
+                        <span id="cashoutResultValue">$0</span>
                     </div>
-                    <button class="btn btn-primary btn-full" id="confirmCashoutBtn">Confirm Cash Out</button>
+                    <button class="btn-primary full" id="confirmCashoutBtn">Confirm Cash Out</button>
                 </div>
             </div>
         </div>
@@ -225,32 +260,21 @@
         <div class="modal hidden" id="historyModal">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2>Session History</h2>
+                    <h2>History</h2>
                     <button class="modal-close" id="closeHistoryBtn">&times;</button>
                 </div>
-                <div class="modal-body" id="historyContent">
-                    <!-- History content populated by JS -->
-                </div>
+                <div class="modal-body" id="historyContent"></div>
             </div>
         </div>
 
-        <!-- Footer -->
-        <footer class="footer">
-            <button class="btn btn-ghost" id="viewHistoryBtn">📚 View History</button>
-            <button class="btn btn-ghost" id="exportDataBtn">📤 Export Data</button>
-            <button class="btn btn-ghost btn-danger-text" id="clearDataBtn">🗑️ Clear All Data</button>
-        </footer>
+        <!-- Footer Actions (hidden, accessible via long-press or menu) -->
+        <div class="footer-actions hidden" id="footerActions">
+            <button class="btn-ghost" id="viewHistoryBtn">📚 History</button>
+            <button class="btn-ghost" id="exportDataBtn">📤 Export</button>
+            <button class="btn-ghost danger" id="clearDataBtn">🗑️ Clear All</button>
+        </div>
     </div>
 
     <script src="app.js"></script>
-    <script>
-        // Register Service Worker for PWA
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./sw.js')
-                .then(reg => console.log('Service Worker registered'))
-                .catch(err => console.log('Service Worker registration failed:', err));
-        }
-    </script>
 </body>
 </html>
-

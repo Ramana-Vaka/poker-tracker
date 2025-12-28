@@ -1,6 +1,6 @@
 /**
- * Poker Night Tracker
- * A simple app to track buy-ins, cash-outs, and high hands for poker games
+ * Poker Night Tracker v2
+ * Tabbed Dashboard Design
  */
 
 // Initialize app on page load
@@ -18,10 +18,6 @@ const state = {
     highHands: []
 };
 
-// ===========================
-// LocalStorage Keys
-// ===========================
-
 const STORAGE_KEYS = {
     SESSIONS: 'poker_sessions',
     CURRENT_SESSION: 'poker_current_session'
@@ -35,33 +31,27 @@ let elements = {};
 
 function initElements() {
     elements = {
-        // Session
-        sessionIndicator: document.getElementById('sessionIndicator'),
-        startSessionBtn: document.getElementById('startSessionBtn'),
-        endSessionBtn: document.getElementById('endSessionBtn'),
-        sessionInfo: document.getElementById('sessionInfo'),
-        sessionDuration: document.getElementById('sessionDuration'),
+        // Header & Stats
+        sessionBadge: document.getElementById('sessionBadge'),
+        sessionStatus: document.getElementById('sessionStatus'),
+        playerCount: document.getElementById('playerCount'),
         totalPot: document.getElementById('totalPot'),
+        sessionTime: document.getElementById('sessionTime'),
+        sessionToggleBtn: document.getElementById('sessionToggleBtn'),
+        statsBar: document.getElementById('statsBar'),
         
         // Players
         playerNameInput: document.getElementById('playerNameInput'),
         addPlayerBtn: document.getElementById('addPlayerBtn'),
+        addPlayerBar: document.getElementById('addPlayerBar'),
         playersList: document.getElementById('playersList'),
+        playerCountBadge: document.getElementById('playerCountBadge'),
         
         // Buy-in
         buyinForm: document.getElementById('buyinForm'),
         buyinPlayer: document.getElementById('buyinPlayer'),
         buyinAmount: document.getElementById('buyinAmount'),
-        
-        // Cash-out Modal
-        cashoutModal: document.getElementById('cashoutModal'),
-        closeCashoutBtn: document.getElementById('closeCashoutBtn'),
-        cashoutPlayerName: document.getElementById('cashoutPlayerName'),
-        cashoutTotalBuyin: document.getElementById('cashoutTotalBuyin'),
-        cashoutAmountInput: document.getElementById('cashoutAmountInput'),
-        cashoutResult: document.getElementById('cashoutResult'),
-        cashoutResultValue: document.getElementById('cashoutResultValue'),
-        confirmCashoutBtn: document.getElementById('confirmCashoutBtn'),
+        activityList: document.getElementById('activityList'),
         
         // High Hand
         highHandForm: document.getElementById('highHandForm'),
@@ -71,31 +61,58 @@ function initElements() {
         highHandBonus: document.getElementById('highHandBonus'),
         bonus5Btn: document.getElementById('bonus5Btn'),
         bonus10Btn: document.getElementById('bonus10Btn'),
-        bonus5Calc: document.getElementById('bonus5Calc'),
-        bonus5Total: document.getElementById('bonus5Total'),
-        bonus10Calc: document.getElementById('bonus10Calc'),
-        bonus10Total: document.getElementById('bonus10Total'),
-        
-        // High Hands & Activity
-        highHandsList: document.getElementById('highHandsList'),
-        activityList: document.getElementById('activityList'),
+        bonus5Text: document.getElementById('bonus5Text'),
+        bonus10Text: document.getElementById('bonus10Text'),
+        currentHighHand: document.getElementById('currentHighHand'),
+        hhDisplay: document.getElementById('hhDisplay'),
         
         // Settlement
-        settlementSection: document.getElementById('settlementSection'),
-        settlementContent: document.getElementById('settlementContent'),
+        settlePotValue: document.getElementById('settlePotValue'),
+        settlePlayerCount: document.getElementById('settlePlayerCount'),
+        settleWinners: document.getElementById('settleWinners'),
+        settleLosers: document.getElementById('settleLosers'),
+        settlePending: document.getElementById('settlePending'),
+        settlePendingCount: document.getElementById('settlePendingCount'),
+        settlePendingList: document.getElementById('settlePendingList'),
+        settleBalance: document.getElementById('settleBalance'),
         
-        // Modal & Footer
+        // Modals
+        initialBuyinModal: document.getElementById('initialBuyinModal'),
+        closeInitialBuyinBtn: document.getElementById('closeInitialBuyinBtn'),
+        initialBuyinAmount: document.getElementById('initialBuyinAmount'),
+        confirmInitialBuyinBtn: document.getElementById('confirmInitialBuyinBtn'),
+        
+        cashoutModal: document.getElementById('cashoutModal'),
+        closeCashoutBtn: document.getElementById('closeCashoutBtn'),
+        cashoutPlayerName: document.getElementById('cashoutPlayerName'),
+        cashoutTotalBuyin: document.getElementById('cashoutTotalBuyin'),
+        cashoutBonusLine: document.getElementById('cashoutBonusLine'),
+        cashoutHighHandBonus: document.getElementById('cashoutHighHandBonus'),
+        cashoutAmountInput: document.getElementById('cashoutAmountInput'),
+        cashoutResult: document.getElementById('cashoutResult'),
+        cashoutResultValue: document.getElementById('cashoutResultValue'),
+        confirmCashoutBtn: document.getElementById('confirmCashoutBtn'),
+        
         historyModal: document.getElementById('historyModal'),
         closeHistoryBtn: document.getElementById('closeHistoryBtn'),
         historyContent: document.getElementById('historyContent'),
+        
+        // Footer
         viewHistoryBtn: document.getElementById('viewHistoryBtn'),
         exportDataBtn: document.getElementById('exportDataBtn'),
-        clearDataBtn: document.getElementById('clearDataBtn')
+        clearDataBtn: document.getElementById('clearDataBtn'),
+        
+        // Tabs
+        tabPlayers: document.getElementById('tabPlayers'),
+        tabBuyin: document.getElementById('tabBuyin'),
+        tabHighHand: document.getElementById('tabHighHand'),
+        tabSettlement: document.getElementById('tabSettlement')
     };
 }
 
-// Duration timer interval
 let durationInterval = null;
+let cashoutPlayerId = null;
+let selectedHandType = '';
 
 // ===========================
 // Initialization
@@ -105,6 +122,7 @@ function init() {
     initElements();
     loadFromStorage();
     setupEventListeners();
+    setupTabNavigation();
     
     if (state.currentSession) {
         restoreSession();
@@ -114,76 +132,151 @@ function init() {
 }
 
 function setupEventListeners() {
-    // Session controls
-    if (elements.startSessionBtn) elements.startSessionBtn.addEventListener('click', startSession);
-    if (elements.endSessionBtn) elements.endSessionBtn.addEventListener('click', endSession);
+    // Session toggle
+    if (elements.sessionToggleBtn) {
+        elements.sessionToggleBtn.addEventListener('click', toggleSession);
+    }
     
     // Player management
-    if (elements.addPlayerBtn) elements.addPlayerBtn.addEventListener('click', addPlayer);
-    if (elements.playerNameInput) elements.playerNameInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') addPlayer();
-    });
+    if (elements.addPlayerBtn) {
+        elements.addPlayerBtn.addEventListener('click', addPlayer);
+    }
+    if (elements.playerNameInput) {
+        elements.playerNameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addPlayer();
+        });
+    }
     
     // Forms
-    if (elements.buyinForm) elements.buyinForm.addEventListener('submit', handleBuyin);
-    if (elements.highHandForm) elements.highHandForm.addEventListener('submit', handleHighHand);
+    if (elements.buyinForm) {
+        elements.buyinForm.addEventListener('submit', handleBuyin);
+    }
+    if (elements.highHandForm) {
+        elements.highHandForm.addEventListener('submit', handleHighHand);
+    }
     
-    // Cash-out modal
-    if (elements.closeCashoutBtn) elements.closeCashoutBtn.addEventListener('click', hideCashoutModal);
-    if (elements.cashoutModal) elements.cashoutModal.addEventListener('click', (e) => {
-        if (e.target === elements.cashoutModal) hideCashoutModal();
-    });
-    if (elements.cashoutAmountInput) elements.cashoutAmountInput.addEventListener('input', updateCashoutPreview);
-    if (elements.confirmCashoutBtn) elements.confirmCashoutBtn.addEventListener('click', confirmCashout);
-    
-    // Quick amount buttons for buy-in form
-    document.querySelectorAll('.chip-btn[data-amount]').forEach(btn => {
+    // Quick amount buttons for buy-in
+    document.querySelectorAll('.chip[data-amount]').forEach(btn => {
         btn.addEventListener('click', () => {
             if (elements.buyinAmount) {
                 elements.buyinAmount.value = btn.dataset.amount;
-                elements.buyinAmount.focus();
             }
         });
     });
-    
-    // Bonus amount buttons for high hand
-    if (elements.bonus5Btn) {
-        elements.bonus5Btn.addEventListener('click', () => selectBonusAmount(5));
-    }
-    if (elements.bonus10Btn) {
-        elements.bonus10Btn.addEventListener('click', () => selectBonusAmount(10));
-    }
     
     // Quick amount buttons for initial buy-in modal
-    document.querySelectorAll('.chip-btn[data-initial]').forEach(btn => {
+    document.querySelectorAll('.chip[data-initial]').forEach(btn => {
         btn.addEventListener('click', () => {
-            const input = document.getElementById('initialBuyinAmount');
-            if (input) {
-                input.value = btn.dataset.initial;
-                input.focus();
+            if (elements.initialBuyinAmount) {
+                elements.initialBuyinAmount.value = btn.dataset.initial;
             }
         });
     });
     
+    // Hand type buttons
+    document.querySelectorAll('.hand-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.hand-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            selectedHandType = btn.dataset.hand;
+            if (elements.highHandType) {
+                elements.highHandType.value = selectedHandType;
+            }
+        });
+    });
+    
+    // Bonus buttons
+    if (elements.bonus5Btn) {
+        elements.bonus5Btn.addEventListener('click', () => selectBonus(5));
+    }
+    if (elements.bonus10Btn) {
+        elements.bonus10Btn.addEventListener('click', () => selectBonus(10));
+    }
+    
     // Initial buy-in modal
-    const closeInitialBuyinBtn = document.getElementById('closeInitialBuyinBtn');
-    const confirmInitialBuyinBtn = document.getElementById('confirmInitialBuyinBtn');
-    const initialBuyinModal = document.getElementById('initialBuyinModal');
+    if (elements.closeInitialBuyinBtn) {
+        elements.closeInitialBuyinBtn.addEventListener('click', hideInitialBuyinModal);
+    }
+    if (elements.confirmInitialBuyinBtn) {
+        elements.confirmInitialBuyinBtn.addEventListener('click', confirmInitialBuyin);
+    }
+    if (elements.initialBuyinModal) {
+        elements.initialBuyinModal.addEventListener('click', (e) => {
+            if (e.target === elements.initialBuyinModal) hideInitialBuyinModal();
+        });
+    }
     
-    if (closeInitialBuyinBtn) closeInitialBuyinBtn.addEventListener('click', hideInitialBuyinModal);
-    if (confirmInitialBuyinBtn) confirmInitialBuyinBtn.addEventListener('click', confirmInitialBuyin);
-    if (initialBuyinModal) initialBuyinModal.addEventListener('click', (e) => {
-        if (e.target === initialBuyinModal) hideInitialBuyinModal();
+    // Cashout modal
+    if (elements.closeCashoutBtn) {
+        elements.closeCashoutBtn.addEventListener('click', hideCashoutModal);
+    }
+    if (elements.cashoutModal) {
+        elements.cashoutModal.addEventListener('click', (e) => {
+            if (e.target === elements.cashoutModal) hideCashoutModal();
+        });
+    }
+    if (elements.cashoutAmountInput) {
+        elements.cashoutAmountInput.addEventListener('input', updateCashoutPreview);
+    }
+    if (elements.confirmCashoutBtn) {
+        elements.confirmCashoutBtn.addEventListener('click', confirmCashout);
+    }
+    
+    // History modal
+    if (elements.closeHistoryBtn) {
+        elements.closeHistoryBtn.addEventListener('click', hideHistory);
+    }
+    if (elements.historyModal) {
+        elements.historyModal.addEventListener('click', (e) => {
+            if (e.target === elements.historyModal) hideHistory();
+        });
+    }
+    
+    // Footer actions
+    if (elements.viewHistoryBtn) {
+        elements.viewHistoryBtn.addEventListener('click', showHistory);
+    }
+    if (elements.exportDataBtn) {
+        elements.exportDataBtn.addEventListener('click', exportData);
+    }
+    if (elements.clearDataBtn) {
+        elements.clearDataBtn.addEventListener('click', clearAllData);
+    }
+}
+
+function setupTabNavigation() {
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tabId = btn.dataset.tab;
+            switchTab(tabId);
+            
+            // Update active state
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        });
+    });
+}
+
+function switchTab(tabId) {
+    // Hide all tabs
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.add('hidden');
     });
     
-    // Modal & Footer
-    if (elements.viewHistoryBtn) elements.viewHistoryBtn.addEventListener('click', showHistory);
-    if (elements.closeHistoryBtn) elements.closeHistoryBtn.addEventListener('click', hideHistory);
-    if (elements.historyModal) elements.historyModal.addEventListener('click', (e) => {
-        if (e.target === elements.historyModal) hideHistory();
-    });
-    if (elements.exportDataBtn) elements.exportDataBtn.addEventListener('click', exportData);
-    if (elements.clearDataBtn) elements.clearDataBtn.addEventListener('click', clearAllData);
+    // Show selected tab
+    const selectedTab = document.getElementById(tabId);
+    if (selectedTab) {
+        selectedTab.classList.remove('hidden');
+    }
+    
+    // Show/hide add player bar based on tab
+    if (elements.addPlayerBar) {
+        if (tabId === 'tabPlayers') {
+            elements.addPlayerBar.classList.remove('hidden');
+        } else {
+            elements.addPlayerBar.classList.add('hidden');
+        }
+    }
 }
 
 // ===========================
@@ -217,31 +310,32 @@ function loadFromStorage() {
 // Session Management
 // ===========================
 
-function startSession() {
-    // Show initial buy-in modal
-    showInitialBuyinModal();
+function toggleSession() {
+    if (state.currentSession) {
+        endSession();
+    } else {
+        showInitialBuyinModal();
+    }
 }
 
 function showInitialBuyinModal() {
-    const modal = document.getElementById('initialBuyinModal');
-    const input = document.getElementById('initialBuyinAmount');
-    if (modal) {
-        modal.classList.remove('hidden');
-        if (input) {
-            input.value = '20';
-            input.focus();
+    if (elements.initialBuyinModal) {
+        elements.initialBuyinModal.classList.remove('hidden');
+        if (elements.initialBuyinAmount) {
+            elements.initialBuyinAmount.value = '20';
+            elements.initialBuyinAmount.focus();
         }
     }
 }
 
 function hideInitialBuyinModal() {
-    const modal = document.getElementById('initialBuyinModal');
-    if (modal) modal.classList.add('hidden');
+    if (elements.initialBuyinModal) {
+        elements.initialBuyinModal.classList.add('hidden');
+    }
 }
 
 function confirmInitialBuyin() {
-    const input = document.getElementById('initialBuyinAmount');
-    const initialBuyin = input ? parseFloat(input.value) || 0 : 0;
+    const initialBuyin = elements.initialBuyinAmount ? parseFloat(elements.initialBuyinAmount.value) || 0 : 0;
     
     state.currentSession = {
         id: Date.now(),
@@ -263,29 +357,24 @@ function confirmInitialBuyin() {
     updateSessionUI(true);
     startDurationTimer();
     
-    const buyinText = initialBuyin > 0 ? ` (Initial buy-in: $${initialBuyin})` : '';
-    addActivity('system', `Session started${buyinText}`, null);
+    addActivity('system', 'Session started', null);
 }
 
 function endSession() {
     if (!state.currentSession) return;
     
-    const confirm = window.confirm('Are you sure you want to end this session? Make sure all players have cashed out.');
+    const confirm = window.confirm('End this session? Make sure all players have cashed out.');
     if (!confirm) return;
     
     state.currentSession.endTime = new Date().toISOString();
     state.currentSession.players = state.players;
     state.currentSession.activities = state.activities;
     state.currentSession.highHands = state.highHands;
-    
-    // Calculate final stats
     state.currentSession.totalPot = calculateTotalPot();
     state.currentSession.playerCount = state.players.length;
     
-    // Add to history
     state.sessions.unshift(state.currentSession);
     
-    // Clear current session
     state.currentSession = null;
     state.players = [];
     state.activities = [];
@@ -303,17 +392,17 @@ function restoreSession() {
 }
 
 function updateSessionUI(isActive) {
-    if (elements.sessionIndicator) {
-        elements.sessionIndicator.classList.toggle('active', isActive);
-        const sessionText = elements.sessionIndicator.querySelector('.session-text');
-        if (sessionText) {
-            sessionText.textContent = isActive ? 'Session Active' : 'No Active Session';
-        }
+    if (elements.sessionBadge) {
+        elements.sessionBadge.classList.toggle('active', isActive);
     }
-    
-    if (elements.startSessionBtn) elements.startSessionBtn.classList.toggle('hidden', isActive);
-    if (elements.endSessionBtn) elements.endSessionBtn.classList.toggle('hidden', !isActive);
-    if (elements.sessionInfo) elements.sessionInfo.classList.toggle('hidden', !isActive);
+    if (elements.sessionStatus) {
+        elements.sessionStatus.textContent = isActive ? 'Live' : 'No Session';
+    }
+    if (elements.sessionToggleBtn) {
+        elements.sessionToggleBtn.textContent = isActive ? '⏹' : '▶';
+        elements.sessionToggleBtn.title = isActive ? 'End Session' : 'Start Session';
+        elements.sessionToggleBtn.classList.toggle('danger', isActive);
+    }
 }
 
 function startDurationTimer() {
@@ -326,10 +415,13 @@ function stopDurationTimer() {
         clearInterval(durationInterval);
         durationInterval = null;
     }
+    if (elements.sessionTime) {
+        elements.sessionTime.textContent = '0:00';
+    }
 }
 
 function updateDuration() {
-    if (!state.currentSession) return;
+    if (!state.currentSession || !elements.sessionTime) return;
     
     const start = new Date(state.currentSession.startTime);
     const now = new Date();
@@ -339,14 +431,11 @@ function updateDuration() {
     const minutes = Math.floor((diff % 3600) / 60);
     const seconds = diff % 60;
     
-    let durationStr = '';
     if (hours > 0) {
-        durationStr = `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        elements.sessionTime.textContent = `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     } else {
-        durationStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        elements.sessionTime.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
     }
-    
-    elements.sessionDuration.textContent = durationStr;
 }
 
 // ===========================
@@ -355,14 +444,13 @@ function updateDuration() {
 
 function addPlayer() {
     if (!state.currentSession) {
-        alert('Please start a session first!');
+        alert('Start a session first!');
         return;
     }
     
     const name = elements.playerNameInput.value.trim();
     if (!name) return;
     
-    // Check for duplicate
     if (state.players.some(p => p.name.toLowerCase() === name.toLowerCase())) {
         alert('Player already exists!');
         return;
@@ -378,12 +466,8 @@ function addPlayer() {
         totalBuyin: 0
     };
     
-    // Auto-apply initial buy-in if set
     if (initialBuyin > 0) {
-        player.buyins.push({
-            amount: initialBuyin,
-            time: new Date().toISOString()
-        });
+        player.buyins.push({ amount: initialBuyin, time: new Date().toISOString() });
         player.totalBuyin = initialBuyin;
     }
     
@@ -391,9 +475,9 @@ function addPlayer() {
     elements.playerNameInput.value = '';
     
     if (initialBuyin > 0) {
-        addActivity('buyin', `${name} joined with $${initialBuyin} buy-in`, initialBuyin);
+        addActivity('buyin', `${name} joined +$${initialBuyin}`, initialBuyin);
     } else {
-        addActivity('player', `${name} joined the game`, null);
+        addActivity('player', `${name} joined`, null);
     }
     
     saveCurrentSession();
@@ -405,12 +489,10 @@ function removePlayer(playerId) {
     if (!player) return;
     
     if (player.buyins.length > 0) {
-        const confirm = window.confirm(`${player.name} has buy-ins recorded. Are you sure you want to remove them?`);
-        if (!confirm) return;
+        if (!window.confirm(`Remove ${player.name}? They have buy-ins recorded.`)) return;
     }
     
     state.players = state.players.filter(p => p.id !== playerId);
-    addActivity('player', `${player.name} left the game`, null);
     saveCurrentSession();
     renderAll();
 }
@@ -423,7 +505,7 @@ function handleBuyin(e) {
     e.preventDefault();
     
     if (!state.currentSession) {
-        alert('Please start a session first!');
+        alert('Start a session first!');
         return;
     }
     
@@ -435,31 +517,20 @@ function handleBuyin(e) {
     const player = state.players.find(p => p.id === playerId);
     if (!player) return;
     
-    player.buyins.push({
-        amount: amount,
-        time: new Date().toISOString()
-    });
+    player.buyins.push({ amount: amount, time: new Date().toISOString() });
     player.totalBuyin += amount;
     
-    addActivity('buyin', `${player.name} bought in`, amount);
+    addActivity('buyin', `${player.name} +$${amount}`, amount);
     
     elements.buyinForm.reset();
     saveCurrentSession();
     renderAll();
 }
 
-// Current player being cashed out
-let cashoutPlayerId = null;
-
 function getPlayerHighHandBonus(playerId) {
-    // Only the CURRENT (latest) high hand winner gets the bonus
     if (state.highHands.length === 0) return 0;
-    
-    const currentHighHand = state.highHands[state.highHands.length - 1];
-    if (currentHighHand.playerId === playerId) {
-        return currentHighHand.bonus || 0;
-    }
-    return 0;
+    const currentHH = state.highHands[state.highHands.length - 1];
+    return currentHH.playerId === playerId ? (currentHH.bonus || 0) : 0;
 }
 
 function openCashoutModal(playerId) {
@@ -467,26 +538,21 @@ function openCashoutModal(playerId) {
     if (!player) return;
     
     cashoutPlayerId = playerId;
-    
-    const highHandBonus = getPlayerHighHandBonus(playerId);
+    const hhBonus = getPlayerHighHandBonus(playerId);
     
     elements.cashoutPlayerName.textContent = player.name;
     elements.cashoutTotalBuyin.textContent = `$${player.totalBuyin}`;
     
-    // Show high hand bonus if any
-    const bonusEl = document.getElementById('cashoutHighHandBonus');
-    if (bonusEl) {
-        if (highHandBonus > 0) {
-            bonusEl.textContent = `+$${highHandBonus}`;
-            bonusEl.parentElement.classList.remove('hidden');
-        } else {
-            bonusEl.parentElement.classList.add('hidden');
-        }
+    if (hhBonus > 0 && elements.cashoutBonusLine) {
+        elements.cashoutHighHandBonus.textContent = `+$${hhBonus}`;
+        elements.cashoutBonusLine.classList.remove('hidden');
+    } else if (elements.cashoutBonusLine) {
+        elements.cashoutBonusLine.classList.add('hidden');
     }
     
     elements.cashoutAmountInput.value = '';
     elements.cashoutResult.classList.add('hidden');
-    elements.cashoutResultValue.className = 'result-value';
+    elements.cashoutResult.className = 'cashout-result hidden';
     
     elements.cashoutModal.classList.remove('hidden');
     elements.cashoutAmountInput.focus();
@@ -502,21 +568,20 @@ function updateCashoutPreview() {
     if (!player) return;
     
     const cashoutAmount = parseFloat(elements.cashoutAmountInput.value) || 0;
-    const highHandBonus = getPlayerHighHandBonus(cashoutPlayerId);
-    // Profit = cash out + high hand bonus - buy-ins
-    const profit = (cashoutAmount + highHandBonus) - player.totalBuyin;
+    const hhBonus = getPlayerHighHandBonus(cashoutPlayerId);
+    const profit = (cashoutAmount + hhBonus) - player.totalBuyin;
     
-    elements.cashoutResult.classList.remove('hidden');
+    elements.cashoutResult.classList.remove('hidden', 'profit', 'loss', 'even');
     
     if (profit > 0) {
-        elements.cashoutResultValue.textContent = `+$${profit} Won!`;
-        elements.cashoutResultValue.className = 'result-value profit';
+        elements.cashoutResultValue.textContent = `+$${profit}`;
+        elements.cashoutResult.classList.add('profit');
     } else if (profit < 0) {
-        elements.cashoutResultValue.textContent = `-$${Math.abs(profit)} Lost`;
-        elements.cashoutResultValue.className = 'result-value loss';
+        elements.cashoutResultValue.textContent = `-$${Math.abs(profit)}`;
+        elements.cashoutResult.classList.add('loss');
     } else {
         elements.cashoutResultValue.textContent = `$0 Even`;
-        elements.cashoutResultValue.className = 'result-value even';
+        elements.cashoutResult.classList.add('even');
     }
 }
 
@@ -526,23 +591,22 @@ function confirmCashout() {
     
     const amount = parseFloat(elements.cashoutAmountInput.value);
     if (isNaN(amount) || amount < 0) {
-        alert('Please enter a valid amount');
+        alert('Enter a valid amount');
         return;
     }
     
-    const highHandBonus = getPlayerHighHandBonus(cashoutPlayerId);
+    const hhBonus = getPlayerHighHandBonus(cashoutPlayerId);
     
     player.cashout = {
         amount: amount,
-        highHandBonus: highHandBonus,
+        highHandBonus: hhBonus,
         time: new Date().toISOString()
     };
     
-    // Profit = cash out + high hand bonus - buy-ins
-    const profit = (amount + highHandBonus) - player.totalBuyin;
+    const profit = (amount + hhBonus) - player.totalBuyin;
     const profitStr = profit >= 0 ? `+$${profit}` : `-$${Math.abs(profit)}`;
     
-    addActivity('cashout', `${player.name} cashed out (${profitStr})`, amount);
+    addActivity('cashout', `${player.name} out (${profitStr})`, amount);
     
     hideCashoutModal();
     saveCurrentSession();
@@ -553,25 +617,44 @@ function confirmCashout() {
 // High Hand
 // ===========================
 
+function selectBonus(multiplier) {
+    const amount = state.players.length * multiplier;
+    if (elements.highHandBonus) {
+        elements.highHandBonus.value = amount;
+    }
+    
+    elements.bonus5Btn?.classList.remove('selected');
+    elements.bonus10Btn?.classList.remove('selected');
+    
+    if (multiplier === 5) {
+        elements.bonus5Btn?.classList.add('selected');
+    } else {
+        elements.bonus10Btn?.classList.add('selected');
+    }
+}
+
 function handleHighHand(e) {
     e.preventDefault();
     
     if (!state.currentSession) {
-        alert('Please start a session first!');
+        alert('Start a session first!');
         return;
     }
     
     const playerId = parseInt(elements.highHandPlayer.value);
-    const handType = elements.highHandType.value;
+    const handType = selectedHandType || elements.highHandType.value;
     const cards = elements.highHandCards.value.trim();
     const bonus = parseFloat(elements.highHandBonus.value) || 0;
     
-    if (!playerId || !handType) return;
+    if (!playerId || !handType) {
+        alert('Select a player and hand type');
+        return;
+    }
     
     const player = state.players.find(p => p.id === playerId);
     if (!player) return;
     
-    const highHand = {
+    state.highHands.push({
         id: Date.now(),
         playerId: playerId,
         playerName: player.name,
@@ -579,17 +662,17 @@ function handleHighHand(e) {
         cards: cards,
         bonus: bonus,
         time: new Date().toISOString()
-    };
+    });
     
-    state.highHands.push(highHand);
+    addActivity('highhand', `${player.name} - ${handType}${bonus ? ` +$${bonus}` : ''}`, bonus || null);
     
-    let activityText = `${player.name} hit ${handType}`;
-    if (bonus > 0) {
-        activityText += ` (+$${bonus} bonus)`;
-    }
-    addActivity('highhand', activityText, bonus || null);
-    
+    // Reset form
     elements.highHandForm.reset();
+    selectedHandType = '';
+    document.querySelectorAll('.hand-btn').forEach(b => b.classList.remove('selected'));
+    elements.bonus5Btn?.classList.remove('selected');
+    elements.bonus10Btn?.classList.remove('selected');
+    
     saveCurrentSession();
     renderAll();
 }
@@ -599,17 +682,14 @@ function handleHighHand(e) {
 // ===========================
 
 function addActivity(type, text, amount) {
-    const activity = {
+    state.activities.unshift({
         id: Date.now(),
         type: type,
         text: text,
         amount: amount,
         time: new Date().toISOString()
-    };
+    });
     
-    state.activities.unshift(activity);
-    
-    // Keep only last 50 activities
     if (state.activities.length > 50) {
         state.activities = state.activities.slice(0, 50);
     }
@@ -620,12 +700,7 @@ function addActivity(type, text, amount) {
 // ===========================
 
 function calculateTotalPot() {
-    return state.players.reduce((sum, player) => sum + player.totalBuyin, 0);
-}
-
-function calculatePlayerProfit(player) {
-    if (!player.cashout) return null;
-    return player.cashout.amount - player.totalBuyin;
+    return state.players.reduce((sum, p) => sum + p.totalBuyin, 0);
 }
 
 // ===========================
@@ -635,59 +710,34 @@ function calculatePlayerProfit(player) {
 function renderAll() {
     renderPlayers();
     renderPlayerSelects();
-    renderHighHands();
     renderActivity();
+    renderHighHand();
     renderSettlement();
-    updateTotalPot();
+    updateStats();
     updateBonusButtons();
 }
 
 function renderPlayers() {
+    if (!elements.playersList) return;
+    
     if (!state.currentSession || state.players.length === 0) {
         elements.playersList.innerHTML = '<li class="empty-state">Start a session to add players</li>';
         return;
     }
     
     elements.playersList.innerHTML = state.players.map(player => {
-        const hasCashedOut = player.cashout !== null;
-        const highHandBonus = getPlayerHighHandBonus(player.id);
-        let actionHtml = '';
-        
-        // Show high hand indicator if player has one
-        const hhIndicator = highHandBonus > 0 ? `<span class="hh-indicator" title="High Hand Bonus">🏆+$${highHandBonus}</span>` : '';
-        
-        if (hasCashedOut) {
-            // Include high hand bonus in profit calculation
-            const bonus = player.cashout.highHandBonus || highHandBonus;
-            const profit = (player.cashout.amount + bonus) - player.totalBuyin;
-            let resultClass = 'even';
-            let resultText = '$0';
-            
-            if (profit > 0) {
-                resultClass = 'profit';
-                resultText = `+$${profit}`;
-            } else if (profit < 0) {
-                resultClass = 'loss';
-                resultText = `-$${Math.abs(profit)}`;
-            }
-            
-            actionHtml = `<span class="player-result ${resultClass}">${resultText}</span>`;
-        } else if (player.totalBuyin > 0) {
-            actionHtml = `<button class="cashout-btn" onclick="openCashoutModal(${player.id})">Cash Out</button>`;
-        }
+        const hhBonus = getPlayerHighHandBonus(player.id);
+        const hhBadge = hhBonus > 0 ? '<span class="hh-badge">🏆</span>' : '';
         
         return `
             <li>
+                <div class="player-avatar">${player.name.charAt(0)}</div>
                 <div class="player-info">
-                    <div class="player-avatar">${player.name.charAt(0)}</div>
-                    <div class="player-details">
-                        <span class="player-name">${escapeHtml(player.name)} ${hhIndicator}</span>
-                        <span class="player-stats">${player.buyins.length} buy-in${player.buyins.length !== 1 ? 's' : ''} • $${player.totalBuyin}</span>
-                    </div>
+                    <div class="player-name">${escapeHtml(player.name)} ${hhBadge}</div>
+                    <div class="player-stats">${player.buyins.length} buy-in${player.buyins.length !== 1 ? 's' : ''} • $${player.totalBuyin}</div>
                 </div>
                 <div class="player-actions">
-                    ${actionHtml}
-                    <button class="remove-player-btn" onclick="removePlayer(${player.id})" title="Remove player">✕</button>
+                    <button class="btn-remove" onclick="removePlayer(${player.id})">×</button>
                 </div>
             </li>
         `;
@@ -695,275 +745,255 @@ function renderPlayers() {
 }
 
 function renderPlayerSelects() {
-    const options = state.players.map(p => 
-        `<option value="${p.id}">${escapeHtml(p.name)}</option>`
-    ).join('');
-    
+    const options = state.players.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
     const defaultOption = '<option value="">Select player...</option>';
     
-    elements.buyinPlayer.innerHTML = defaultOption + options;
-    elements.highHandPlayer.innerHTML = defaultOption + options;
-}
-
-function renderHighHands() {
-    if (state.highHands.length === 0) {
-        elements.highHandsList.innerHTML = '<li class="empty-state">No high hands recorded</li>';
-        return;
-    }
-    
-    // Only show the current (latest) high hand as the winner
-    const currentHH = state.highHands[state.highHands.length - 1];
-    
-    let html = `
-        <li class="high-hand-item current">
-            <div class="high-hand-header">
-                <span class="high-hand-type">${escapeHtml(currentHH.handType)}</span>
-                ${currentHH.bonus > 0 ? `<span class="high-hand-bonus">+$${currentHH.bonus}</span>` : ''}
-            </div>
-            <div class="high-hand-player">🏆 ${escapeHtml(currentHH.playerName)}</div>
-            ${currentHH.cards ? `<div class="high-hand-cards">${escapeHtml(currentHH.cards)}</div>` : ''}
-        </li>
-    `;
-    
-    // Show previous high hands as "beaten" (optional history)
-    if (state.highHands.length > 1) {
-        const previousHands = state.highHands.slice(0, -1).reverse();
-        html += previousHands.map(hh => `
-            <li class="high-hand-item beaten">
-                <div class="high-hand-header">
-                    <span class="high-hand-type">${escapeHtml(hh.handType)}</span>
-                    <span class="beaten-label">beaten</span>
-                </div>
-                <div class="high-hand-player">${escapeHtml(hh.playerName)}</div>
-            </li>
-        `).join('');
-    }
-    
-    elements.highHandsList.innerHTML = html;
+    if (elements.buyinPlayer) elements.buyinPlayer.innerHTML = defaultOption + options;
+    if (elements.highHandPlayer) elements.highHandPlayer.innerHTML = defaultOption + options;
 }
 
 function renderActivity() {
-    // Filter to only show buy-ins
+    if (!elements.activityList) return;
+    
     const buyinActivities = state.activities.filter(a => a.type === 'buyin');
     
     if (buyinActivities.length === 0) {
-        elements.activityList.innerHTML = '<li class="empty-state">No buy-ins recorded yet</li>';
+        elements.activityList.innerHTML = '<li class="empty-state">No buy-ins yet</li>';
         return;
     }
     
-    elements.activityList.innerHTML = buyinActivities.slice(0, 20).map(activity => {
+    elements.activityList.innerHTML = buyinActivities.slice(0, 10).map(activity => {
         const time = new Date(activity.time);
         const timeStr = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         
-        let amountHtml = '';
-        if (activity.amount !== null) {
-            amountHtml = `<span class="activity-amount">$${activity.amount}</span>`;
-        }
-        
         return `
-            <li class="activity-item">
+            <li>
                 <span class="activity-time">${timeStr}</span>
-                <span class="activity-text">${activity.text} ${amountHtml}</span>
+                <span class="activity-text">${activity.text}</span>
             </li>
         `;
     }).join('');
 }
 
-function updateTotalPot() {
-    const total = calculateTotalPot();
-    elements.totalPot.textContent = `$${total}`;
+function renderHighHand() {
+    if (!elements.hhDisplay) return;
+    
+    if (state.highHands.length === 0) {
+        elements.hhDisplay.innerHTML = '<span class="empty-state">No high hand yet</span>';
+        return;
+    }
+    
+    const currentHH = state.highHands[state.highHands.length - 1];
+    elements.hhDisplay.innerHTML = `
+        <div class="hh-winner">
+            <span class="hh-player">${escapeHtml(currentHH.playerName)}</span>
+            <span class="hh-hand">${escapeHtml(currentHH.handType)}</span>
+        </div>
+        ${currentHH.bonus > 0 ? `<div class="hh-bonus">+$${currentHH.bonus} bonus</div>` : ''}
+        ${currentHH.cards ? `<div class="hh-cards">${escapeHtml(currentHH.cards)}</div>` : ''}
+    `;
 }
-
-// ===========================
-// Bonus Buttons
-// ===========================
-
-function updateBonusButtons() {
-    const playerCount = state.players.length;
-    
-    if (elements.bonus5Calc) {
-        elements.bonus5Calc.textContent = `${playerCount} × $5`;
-    }
-    if (elements.bonus5Total) {
-        elements.bonus5Total.textContent = `= $${playerCount * 5}`;
-    }
-    if (elements.bonus10Calc) {
-        elements.bonus10Calc.textContent = `${playerCount} × $10`;
-    }
-    if (elements.bonus10Total) {
-        elements.bonus10Total.textContent = `= $${playerCount * 10}`;
-    }
-}
-
-function selectBonusAmount(multiplier) {
-    const playerCount = state.players.length;
-    const amount = playerCount * multiplier;
-    
-    if (elements.highHandBonus) {
-        elements.highHandBonus.value = amount;
-    }
-    
-    // Visual feedback - highlight selected button
-    if (elements.bonus5Btn) elements.bonus5Btn.classList.remove('selected');
-    if (elements.bonus10Btn) elements.bonus10Btn.classList.remove('selected');
-    
-    if (multiplier === 5 && elements.bonus5Btn) {
-        elements.bonus5Btn.classList.add('selected');
-    } else if (multiplier === 10 && elements.bonus10Btn) {
-        elements.bonus10Btn.classList.add('selected');
-    }
-}
-
-// ===========================
-// Settlement Section
-// ===========================
 
 function renderSettlement() {
-    if (!elements.settlementSection || !elements.settlementContent) {
-        return;
+    // Update header stats
+    if (elements.settlePotValue) {
+        elements.settlePotValue.textContent = `$${calculateTotalPot()}`;
+    }
+    if (elements.settlePlayerCount) {
+        elements.settlePlayerCount.textContent = `${state.players.length} players`;
     }
     
-    // Only show if there are players with activity
-    const hasActivity = state.players.some(p => p.totalBuyin > 0);
-    
-    if (!hasActivity) {
-        elements.settlementSection.classList.add('hidden');
-        elements.settlementContent.innerHTML = '';
-        return;
-    }
-    
-    elements.settlementSection.classList.remove('hidden');
-    
-    const totalPot = calculateTotalPot();
-    
-    // Calculate each player's profit/loss
-    const playerResults = state.players.map(player => {
-        const highHandBonus = getPlayerHighHandBonus(player.id);
-        
+    // Calculate results
+    const results = state.players.map(player => {
+        const hhBonus = getPlayerHighHandBonus(player.id);
         if (player.cashout) {
-            const bonus = player.cashout.highHandBonus || highHandBonus;
+            const bonus = player.cashout.highHandBonus || hhBonus;
             const profit = (player.cashout.amount + bonus) - player.totalBuyin;
-            return {
-                name: player.name,
-                profit: profit,
-                cashedOut: true,
-                cashoutAmount: player.cashout.amount,
-                highHandBonus: bonus
-            };
-        } else {
-            // Not cashed out yet - show as pending
-            return {
-                name: player.name,
-                profit: null,
-                cashedOut: false,
-                totalBuyin: player.totalBuyin,
-                highHandBonus: highHandBonus
-            };
+            return { ...player, profit, settled: true, hhBonus: bonus };
         }
+        return { ...player, profit: 0, settled: false, hhBonus };
     });
     
-    // Separate into winners, losers, and pending
-    const winners = playerResults.filter(p => p.cashedOut && p.profit > 0).sort((a, b) => b.profit - a.profit);
-    const losers = playerResults.filter(p => p.cashedOut && p.profit < 0).sort((a, b) => a.profit - b.profit);
-    const even = playerResults.filter(p => p.cashedOut && p.profit === 0);
-    const pending = playerResults.filter(p => !p.cashedOut && p.totalBuyin > 0);
+    const winners = results.filter(r => r.settled && r.profit > 0).sort((a, b) => b.profit - a.profit);
+    const losers = results.filter(r => r.settled && r.profit < 0).sort((a, b) => a.profit - b.profit);
+    const even = results.filter(r => r.settled && r.profit === 0);
+    const pending = results.filter(r => !r.settled && r.totalBuyin > 0);
     
-    // Calculate totals
-    const totalWinnings = winners.reduce((sum, p) => sum + p.profit, 0);
-    const totalLosses = Math.abs(losers.reduce((sum, p) => sum + p.profit, 0));
-    const isBalanced = Math.abs(totalWinnings - totalLosses) < 0.01;
-    
-    let html = `
-        <div class="settlement-pot">
-            <div class="settlement-pot-label">Total Pot</div>
-            <div class="settlement-pot-value">$${totalPot}</div>
-        </div>
-    `;
-    
-    // Winners section
-    if (winners.length > 0) {
-        html += `
-            <div class="settlement-group">
-                <div class="settlement-group-header winners">
-                    🟢 WINNERS (+$${totalWinnings})
+    // Render Winners
+    if (elements.settleWinners) {
+        if (winners.length > 0 || even.length > 0) {
+            const totalWin = winners.reduce((sum, p) => sum + p.profit, 0);
+            elements.settleWinners.innerHTML = `
+                <div class="settle-group-header">
+                    <span>🏆 Winners</span>
+                    <span>+$${totalWin}</span>
                 </div>
-                ${winners.map(p => `
-                    <div class="settlement-player">
-                        <span class="settlement-player-name">${escapeHtml(p.name)}${p.highHandBonus > 0 ? ' 🏆' : ''}</span>
-                        <span class="settlement-player-amount profit">+$${p.profit}</span>
-                    </div>
-                `).join('')}
-            </div>
-        `;
+                <div class="settle-group-list">
+                    ${winners.map(p => `
+                        <div class="settle-result-row">
+                            <span class="settle-result-name">
+                                ${escapeHtml(p.name)}
+                                ${p.hhBonus > 0 ? `<span class="hh-bonus-tag">🏆 +$${p.hhBonus}</span>` : ''}
+                            </span>
+                            <span class="settle-result-amount profit">+$${p.profit}</span>
+                        </div>
+                    `).join('')}
+                    ${even.map(p => `
+                        <div class="settle-result-row">
+                            <span class="settle-result-name">
+                                ${escapeHtml(p.name)}
+                                ${p.hhBonus > 0 ? `<span class="hh-bonus-tag">🏆 +$${p.hhBonus}</span>` : ''}
+                            </span>
+                            <span class="settle-result-amount" style="color: var(--text-muted)">$0</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            elements.settleWinners.classList.remove('hidden');
+        } else {
+            elements.settleWinners.classList.add('hidden');
+        }
     }
     
-    // Even section
-    if (even.length > 0) {
-        html += `
-            <div class="settlement-group">
-                <div class="settlement-group-header" style="color: var(--text-muted)">
-                    ⚪ EVEN
+    // Render Losers
+    if (elements.settleLosers) {
+        if (losers.length > 0) {
+            const totalLoss = Math.abs(losers.reduce((sum, p) => sum + p.profit, 0));
+            elements.settleLosers.innerHTML = `
+                <div class="settle-group-header">
+                    <span>💸 Owes</span>
+                    <span>-$${totalLoss}</span>
                 </div>
-                ${even.map(p => `
-                    <div class="settlement-player">
-                        <span class="settlement-player-name">${escapeHtml(p.name)}</span>
-                        <span class="settlement-player-amount" style="color: var(--text-muted)">$0</span>
-                    </div>
-                `).join('')}
-            </div>
-        `;
+                <div class="settle-group-list">
+                    ${losers.map(p => `
+                        <div class="settle-result-row">
+                            <span class="settle-result-name">
+                                ${escapeHtml(p.name)}
+                                ${p.hhBonus > 0 ? `<span class="hh-bonus-tag">🏆 +$${p.hhBonus}</span>` : ''}
+                            </span>
+                            <span class="settle-result-amount loss">-$${Math.abs(p.profit)}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            elements.settleLosers.classList.remove('hidden');
+        } else {
+            elements.settleLosers.classList.add('hidden');
+        }
     }
     
-    // Losers section
-    if (losers.length > 0) {
-        html += `
-            <div class="settlement-group">
-                <div class="settlement-group-header losers">
-                    🔴 OWES (-$${totalLosses})
-                </div>
-                ${losers.map(p => `
-                    <div class="settlement-player">
-                        <span class="settlement-player-name">${escapeHtml(p.name)}</span>
-                        <span class="settlement-player-amount loss">-$${Math.abs(p.profit)}</span>
+    // Render Pending
+    if (elements.settlePending && elements.settlePendingList && elements.settlePendingCount) {
+        if (pending.length > 0) {
+            elements.settlePendingCount.textContent = `${pending.length} remaining`;
+            elements.settlePendingList.innerHTML = pending.map(p => `
+                <div class="settle-pending-row">
+                    <div class="settle-pending-info">
+                        <div class="settle-pending-name">
+                            ${escapeHtml(p.name)}
+                            ${p.hhBonus > 0 ? `<span class="hh-bonus-tag">🏆 +$${p.hhBonus}</span>` : ''}
+                        </div>
+                        <div class="settle-pending-buyin">$${p.totalBuyin} in</div>
                     </div>
-                `).join('')}
-            </div>
-        `;
+                    <input type="number" class="settle-input" id="settle-${p.id}" placeholder="$" min="0">
+                    <button class="settle-btn" onclick="confirmSettle(${p.id})">✓</button>
+                </div>
+            `).join('');
+            elements.settlePending.classList.remove('hidden');
+        } else if (state.players.length > 0) {
+            elements.settlePending.classList.add('hidden');
+        } else {
+            elements.settlePendingCount.textContent = '';
+            elements.settlePendingList.innerHTML = '<div class="empty-state">Start a session to settle</div>';
+            elements.settlePending.classList.remove('hidden');
+        }
     }
     
-    // Pending section
-    if (pending.length > 0) {
-        html += `
-            <div class="settlement-group">
-                <div class="settlement-group-header pending">
-                    ⏳ NOT CASHED OUT
-                </div>
-                ${pending.map(p => `
-                    <div class="settlement-player">
-                        <span class="settlement-player-name">${escapeHtml(p.name)}${p.highHandBonus > 0 ? ' 🏆' : ''}</span>
-                        <span class="settlement-player-amount pending">$${p.totalBuyin} in play</span>
-                    </div>
-                `).join('')}
-            </div>
-        `;
-    }
-    
-    // Balance check (only show if someone has cashed out)
-    if (winners.length > 0 || losers.length > 0) {
-        const balanceClass = isBalanced ? 'balanced' : 'unbalanced';
-        const balanceText = isBalanced 
-            ? '✓ Balanced' 
-            : `⚠ Unbalanced (${pending.length} pending)`;
+    // Render Balance Check
+    if (elements.settleBalance) {
+        const totalWinnings = winners.reduce((sum, p) => sum + p.profit, 0);
+        const totalLosses = Math.abs(losers.reduce((sum, p) => sum + p.profit, 0));
+        const diff = Math.abs(totalWinnings - totalLosses);
         
-        html += `
-            <div class="settlement-balance">
-                <span class="settlement-balance-label">Verification</span>
-                <span class="settlement-balance-check ${balanceClass}">${balanceText}</span>
-            </div>
-        `;
+        if (winners.length > 0 || losers.length > 0) {
+            const isBalanced = diff < 0.01 && pending.length === 0;
+            elements.settleBalance.innerHTML = `
+                <span class="settle-balance-label">Balance Check</span>
+                <span class="settle-balance-value ${isBalanced ? 'balanced' : 'unbalanced'}">
+                    ${isBalanced ? '✓ Balanced' : `⚠ Off by $${diff.toFixed(0)}${pending.length > 0 ? ` (${pending.length} pending)` : ''}`}
+                </span>
+            `;
+            elements.settleBalance.classList.remove('hidden');
+        } else {
+            elements.settleBalance.classList.add('hidden');
+        }
+    }
+}
+
+// Inline settle functions
+function previewSettle(playerId) {
+    // Could add live preview here if needed
+}
+
+function confirmSettle(playerId) {
+    const input = document.getElementById(`settle-${playerId}`);
+    if (!input) return;
+    
+    const amount = parseFloat(input.value);
+    if (isNaN(amount) || amount < 0) {
+        alert('Enter a valid amount');
+        return;
     }
     
-    elements.settlementContent.innerHTML = html;
+    const player = state.players.find(p => p.id === playerId);
+    if (!player) return;
+    
+    const hhBonus = getPlayerHighHandBonus(playerId);
+    
+    player.cashout = {
+        amount: amount,
+        highHandBonus: hhBonus,
+        time: new Date().toISOString()
+    };
+    
+    const profit = (amount + hhBonus) - player.totalBuyin;
+    const profitStr = profit >= 0 ? `+$${profit}` : `-$${Math.abs(profit)}`;
+    addActivity('cashout', `${player.name} out (${profitStr})`, amount);
+    
+    saveCurrentSession();
+    renderAll();
+}
+
+function undoSettle(playerId) {
+    const player = state.players.find(p => p.id === playerId);
+    if (!player || !player.cashout) return;
+    
+    player.cashout = null;
+    saveCurrentSession();
+    renderAll();
+}
+
+function updateStats() {
+    if (elements.playerCount) {
+        elements.playerCount.textContent = state.players.length;
+    }
+    if (elements.totalPot) {
+        elements.totalPot.textContent = `$${calculateTotalPot()}`;
+    }
+    if (elements.playerCountBadge) {
+        const count = state.players.length;
+        elements.playerCountBadge.textContent = `${count} player${count !== 1 ? 's' : ''}`;
+    }
+}
+
+function updateBonusButtons() {
+    const count = state.players.length;
+    if (elements.bonus5Text) {
+        elements.bonus5Text.textContent = `${count}×$5`;
+    }
+    if (elements.bonus10Text) {
+        elements.bonus10Text.textContent = `${count}×$10`;
+    }
 }
 
 // ===========================
@@ -971,50 +1001,21 @@ function renderSettlement() {
 // ===========================
 
 function showHistory() {
+    if (!elements.historyContent) return;
+    
     if (state.sessions.length === 0) {
         elements.historyContent.innerHTML = '<div class="empty-state">No session history yet</div>';
     } else {
         elements.historyContent.innerHTML = state.sessions.map(session => {
             const startDate = new Date(session.startTime);
-            const endDate = session.endTime ? new Date(session.endTime) : null;
-            
-            const dateStr = startDate.toLocaleDateString([], { 
-                weekday: 'short', 
-                month: 'short', 
-                day: 'numeric',
-                year: 'numeric'
-            });
-            
-            let durationStr = 'In Progress';
-            if (endDate) {
-                const diff = Math.floor((endDate - startDate) / 1000 / 60);
-                const hours = Math.floor(diff / 60);
-                const minutes = diff % 60;
-                durationStr = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
-            }
-            
-            const highHandCount = session.highHands ? session.highHands.length : 0;
-            
+            const dateStr = startDate.toLocaleDateString([], { month: 'short', day: 'numeric' });
             return `
-                <div class="history-session">
-                    <div class="history-session-header">
-                        <span class="history-session-date">${dateStr}</span>
-                        <span class="history-session-duration">${durationStr}</span>
+                <div style="padding: 12px; background: var(--bg-secondary); border-radius: 8px; margin-bottom: 8px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <strong>${dateStr}</strong>
+                        <span style="color: var(--text-muted)">${session.playerCount || 0} players</span>
                     </div>
-                    <div class="history-stats">
-                        <div class="history-stat">
-                            <span class="history-stat-label">Players</span>
-                            <span class="history-stat-value">${session.playerCount || session.players?.length || 0}</span>
-                        </div>
-                        <div class="history-stat">
-                            <span class="history-stat-label">Total Pot</span>
-                            <span class="history-stat-value">$${session.totalPot || 0}</span>
-                        </div>
-                        <div class="history-stat">
-                            <span class="history-stat-label">High Hands</span>
-                            <span class="history-stat-value">${highHandCount}</span>
-                        </div>
-                    </div>
+                    <div style="color: var(--gold); font-weight: 600;">Pot: $${session.totalPot || 0}</div>
                 </div>
             `;
         }).join('');
@@ -1043,18 +1044,15 @@ function exportData() {
     
     const a = document.createElement('a');
     a.href = url;
-    a.download = `poker-tracker-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `poker-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     
     URL.revokeObjectURL(url);
 }
 
 function clearAllData() {
-    const confirm = window.confirm('Are you sure you want to clear ALL data? This cannot be undone!');
-    if (!confirm) return;
-    
-    const doubleConfirm = window.confirm('This will delete all sessions and history. Are you really sure?');
-    if (!doubleConfirm) return;
+    if (!window.confirm('Clear ALL data? This cannot be undone!')) return;
+    if (!window.confirm('Are you really sure?')) return;
     
     localStorage.removeItem(STORAGE_KEYS.SESSIONS);
     localStorage.removeItem(STORAGE_KEYS.CURRENT_SESSION);
@@ -1071,7 +1069,7 @@ function clearAllData() {
 }
 
 // ===========================
-// Helper Functions
+// Helpers
 // ===========================
 
 function saveCurrentSession() {
@@ -1089,13 +1087,9 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Make functions available globally for onclick
+// Global functions for onclick
 window.removePlayer = removePlayer;
 window.openCashoutModal = openCashoutModal;
-
-// ===========================
-// Initialize App
-// ===========================
-
-// App is initialized after PIN unlock (see initPinLock function)
-
+window.confirmSettle = confirmSettle;
+window.undoSettle = undoSettle;
+window.previewSettle = previewSettle;
