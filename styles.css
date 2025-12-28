@@ -58,9 +58,16 @@ body {
     display: flex;
     flex-direction: column;
     height: 100%;
-    max-width: 480px;
+    max-width: 100%;
     margin: 0 auto;
     background: var(--bg-primary);
+}
+
+/* Mobile: constrain width */
+@media (max-width: 768px) {
+    .app {
+        max-width: 480px;
+    }
 }
 
 /* Header */
@@ -1089,9 +1096,14 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
-    max-width: 480px;
     margin: 0 auto;
     z-index: 50;
+}
+
+@media (max-width: 768px) {
+    .bottom-nav {
+        max-width: 480px;
+    }
 }
 
 .nav-btn {
@@ -1282,7 +1294,83 @@ body {
 }
 
 /* Desktop adjustments */
-@media (min-width: 481px) {
+/* Desktop: Show all sections in grid, hide bottom nav */
+@media (min-width: 769px) {
+    .app {
+        max-width: 1200px;
+    }
+    
+    body {
+        background: #050709;
+    }
+    
+    .main-content {
+        padding: 20px 24px;
+        padding-bottom: 20px; /* No bottom nav on desktop */
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        align-content: start;
+    }
+    
+    /* Show all tab contents in a grid on desktop */
+    .tab-content {
+        display: block !important;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 16px;
+    }
+    
+    .tab-content.hidden {
+        display: block !important;
+    }
+    
+    /* Settlement section spans full width */
+    #tabSettlement {
+        grid-column: 1 / -1;
+    }
+    
+    /* Hide bottom nav on desktop */
+    .bottom-nav {
+        display: none;
+    }
+    
+    /* Player input bar adjustments */
+    .player-input-bar {
+        display: flex !important;
+        max-width: none;
+        position: static;
+        background: transparent;
+        border: none;
+        padding: 0;
+        margin-bottom: 16px;
+    }
+    
+    /* Wider header */
+    .header {
+        padding: 0 24px;
+    }
+    
+    /* Stats bar */
+    .stats-bar {
+        padding: 0 24px;
+    }
+    
+    /* Section header on desktop */
+    .section-header h2 {
+        font-size: 16px;
+    }
+}
+
+/* Tablet: slightly smaller grid */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .app {
+        max-width: 900px;
+    }
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
     .app {
         border-left: 1px solid var(--border);
         border-right: 1px solid var(--border);
