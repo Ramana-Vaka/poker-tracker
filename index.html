@@ -184,6 +184,82 @@
                     <!-- Dynamic content -->
                 </div>
             </section>
+
+            <!-- Tab: Advisor -->
+            <section class="tab-content hidden" id="tabAdvisor">
+                <div class="section-header">
+                    <h2>Preflop Advisor</h2>
+                    <span class="player-count-badge">Decision Helper</span>
+                </div>
+                <form class="compact-form" id="advisorForm">
+                    <select id="advisorStreet" required>
+                        <option value="preflop" selected>Preflop</option>
+                        <option value="flop">Flop</option>
+                    </select>
+                    <div class="advisor-card-slots">
+                        <button type="button" class="advisor-slot active" id="advisorCardA" data-slot="A">Card 1</button>
+                        <button type="button" class="advisor-slot" id="advisorCardB" data-slot="B">Card 2</button>
+                    </div>
+                    <div class="advisor-board-slots hidden" id="advisorBoardSlots">
+                        <button type="button" class="advisor-slot board" id="advisorFlop1" data-slot="F1">Flop 1</button>
+                        <button type="button" class="advisor-slot board" id="advisorFlop2" data-slot="F2">Flop 2</button>
+                        <button type="button" class="advisor-slot board" id="advisorFlop3" data-slot="F3">Flop 3</button>
+                    </div>
+                    <div class="advisor-picker-label">Card Keypad (5×4)</div>
+                    <div class="advisor-picker-grid" id="advisorPickerGrid">
+                        <button type="button" class="advisor-picker-btn" data-key="A">A</button>
+                        <button type="button" class="advisor-picker-btn" data-key="K">K</button>
+                        <button type="button" class="advisor-picker-btn" data-key="Q">Q</button>
+                        <button type="button" class="advisor-picker-btn" data-key="J">J</button>
+                        <button type="button" class="advisor-picker-btn" data-key="T">10</button>
+                        <button type="button" class="advisor-picker-btn" data-key="9">9</button>
+                        <button type="button" class="advisor-picker-btn" data-key="8">8</button>
+                        <button type="button" class="advisor-picker-btn" data-key="7">7</button>
+                        <button type="button" class="advisor-picker-btn" data-key="6">6</button>
+                        <button type="button" class="advisor-picker-btn" data-key="5">5</button>
+                        <button type="button" class="advisor-picker-btn" data-key="4">4</button>
+                        <button type="button" class="advisor-picker-btn" data-key="3">3</button>
+                        <button type="button" class="advisor-picker-btn" data-key="2">2</button>
+                        <button type="button" class="advisor-picker-btn suit spade" data-key="S">♠</button>
+                        <button type="button" class="advisor-picker-btn suit heart" data-key="H">♥</button>
+                        <button type="button" class="advisor-picker-btn suit diamond" data-key="D">♦</button>
+                        <button type="button" class="advisor-picker-btn suit club" data-key="C">♣</button>
+                        <button type="button" class="advisor-picker-btn action" data-key="BACK">⌫</button>
+                        <button type="button" class="advisor-picker-btn action" data-key="CLEAR">Clear</button>
+                        <button type="button" class="advisor-picker-btn action" data-key="SWAP">Swap</button>
+                    </div>
+                    <p class="advisor-hint">Tap a slot, then tap rank + suit. Example: A then ♠.</p>
+                    <select id="advisorPosition" required>
+                        <option value="UTG">UTG</option>
+                        <option value="MP">MP</option>
+                        <option value="CO">CO</option>
+                        <option value="BTN">BTN</option>
+                        <option value="SB">SB</option>
+                        <option value="BB">BB</option>
+                    </select>
+                    <div class="advisor-grid">
+                        <div class="amount-input">
+                            <span class="currency">$</span>
+                            <input type="number" id="advisorPotSize" placeholder="Pot size" min="0" step="0.01" required>
+                        </div>
+                        <div class="amount-input">
+                            <span class="currency">$</span>
+                            <input type="number" id="advisorCallAmount" placeholder="To call" min="0" step="0.01" required>
+                        </div>
+                    </div>
+                    <div class="advisor-grid">
+                        <input type="number" id="advisorPlayersCount" placeholder="Players at table" min="2" max="10" value="6" required>
+                        <input type="number" id="advisorStackBb" placeholder="Stack (bb)" min="1" max="500" value="100">
+                    </div>
+                    <button type="submit" class="btn-primary">Analyze Spot</button>
+                </form>
+
+                <div class="advisor-result hidden" id="advisorResult">
+                    <div class="advisor-action" id="advisorAction">Call</div>
+                    <div class="advisor-confidence" id="advisorConfidence">Confidence: 0%</div>
+                    <ul class="advisor-reasons" id="advisorReasons"></ul>
+                </div>
+            </section>
         </main>
 
         <!-- Bottom Navigation -->
@@ -203,6 +279,10 @@
             <button class="nav-btn" data-tab="tabSettlement">
                 <span class="nav-icon">📊</span>
                 <span class="nav-label">Settle</span>
+            </button>
+            <button class="nav-btn" data-tab="tabAdvisor">
+                <span class="nav-icon">🧠</span>
+                <span class="nav-label">Advisor</span>
             </button>
         </nav>
 
@@ -275,6 +355,6 @@
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <script type="module" src="app.js"></script>
 </body>
 </html>

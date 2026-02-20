@@ -3,6 +3,15 @@
  * Tabbed Dashboard Design
  */
 
+import {
+    buildActivityMarkup,
+    buildHighHandMarkup,
+    buildPlayerOptionsMarkup,
+    buildPlayersListMarkup,
+    buildSettlementSections
+} from './js/components/pokerTemplates.js';
+import { evaluateFlopSpot, evaluatePreflopSpot } from './js/components/preflopAdvisor.js';
+
 // Initialize app on page load
 document.addEventListener('DOMContentLoaded', init);
 
@@ -106,13 +115,42 @@ function initElements() {
         tabPlayers: document.getElementById('tabPlayers'),
         tabBuyin: document.getElementById('tabBuyin'),
         tabHighHand: document.getElementById('tabHighHand'),
-        tabSettlement: document.getElementById('tabSettlement')
+        tabSettlement: document.getElementById('tabSettlement'),
+        tabAdvisor: document.getElementById('tabAdvisor'),
+
+        // Preflop Advisor
+        advisorForm: document.getElementById('advisorForm'),
+        advisorStreet: document.getElementById('advisorStreet'),
+        advisorCardA: document.getElementById('advisorCardA'),
+        advisorCardB: document.getElementById('advisorCardB'),
+        advisorBoardSlots: document.getElementById('advisorBoardSlots'),
+        advisorFlop1: document.getElementById('advisorFlop1'),
+        advisorFlop2: document.getElementById('advisorFlop2'),
+        advisorFlop3: document.getElementById('advisorFlop3'),
+        advisorPickerGrid: document.getElementById('advisorPickerGrid'),
+        advisorPosition: document.getElementById('advisorPosition'),
+        advisorPotSize: document.getElementById('advisorPotSize'),
+        advisorCallAmount: document.getElementById('advisorCallAmount'),
+        advisorPlayersCount: document.getElementById('advisorPlayersCount'),
+        advisorStackBb: document.getElementById('advisorStackBb'),
+        advisorResult: document.getElementById('advisorResult'),
+        advisorAction: document.getElementById('advisorAction'),
+        advisorConfidence: document.getElementById('advisorConfidence'),
+        advisorReasons: document.getElementById('advisorReasons')
     };
 }
 
 let durationInterval = null;
 let cashoutPlayerId = null;
 let selectedHandType = '';
+let advisorActiveSlot = 'A';
+let advisorCards = {
+    A: { rank: '', suit: '' },
+    B: { rank: '', suit: '' },
+    F1: { rank: '', suit: '' },
+    F2: { rank: '', suit: '' },
+    F3: { rank: '', suit: '' }
+};
 
 // ===========================
 // Initialization
@@ -123,6 +161,8 @@ function init() {
     loadFromStorage();
     setupEventListeners();
     setupTabNavigation();
+    handleAdvisorStreetChange();
+    updateAdvisorCardSlotUI();
     
     if (state.currentSession) {
         restoreSession();
@@ -153,6 +193,24 @@ function setupEventListeners() {
     }
     if (elements.highHandForm) {
         elements.highHandForm.addEventListener('submit', handleHighHand);
+    }
+    if (elements.advisorForm) {
+        elements.advisorForm.addEventListener('submit', handleAdvisorAnalyze);
+    }
+    if (elements.advisorCardA && elements.advisorCardB) {
+        elements.advisorCardA.addEventListener('click', () => setAdvisorActiveSlot('A'));
+        elements.advisorCardB.addEventListener('click', () => setAdvisorActiveSlot('B'));
+    }
+    if (elements.advisorFlop1 && elements.advisorFlop2 && elements.advisorFlop3) {
+        elements.advisorFlop1.addEventListener('click', () => setAdvisorActiveSlot('F1'));
+        elements.advisorFlop2.addEventListener('click', () => setAdvisorActiveSlot('F2'));
+        elements.advisorFlop3.addEventListener('click', () => setAdvisorActiveSlot('F3'));
+    }
+    if (elements.advisorStreet) {
+        elements.advisorStreet.addEventListener('change', handleAdvisorStreetChange);
+    }
+    if (elements.advisorPickerGrid) {
+        elements.advisorPickerGrid.addEventListener('click', handleAdvisorKeypadClick);
     }
     
     // Quick amount buttons for buy-in
@@ -719,79 +777,32 @@ function renderAll() {
 
 function renderPlayers() {
     if (!elements.playersList) return;
-    
-    if (!state.currentSession || state.players.length === 0) {
-        elements.playersList.innerHTML = '<li class="empty-state">Start a session to add players</li>';
-        return;
-    }
-    
-    elements.playersList.innerHTML = state.players.map(player => {
-        const hhBonus = getPlayerHighHandBonus(player.id);
-        const hhBadge = hhBonus > 0 ? '<span class="hh-badge">🏆</span>' : '';
-        
-        return `
-            <li>
-                <div class="player-avatar">${player.name.charAt(0)}</div>
-                <div class="player-info">
-                    <div class="player-name">${escapeHtml(player.name)} ${hhBadge}</div>
-                    <div class="player-stats">${player.buyins.length} buy-in${player.buyins.length !== 1 ? 's' : ''} • $${player.totalBuyin}</div>
-                </div>
-                <div class="player-actions">
-                    <button class="btn-remove" onclick="removePlayer(${player.id})">×</button>
-                </div>
-            </li>
-        `;
-    }).join('');
+
+    elements.playersList.innerHTML = buildPlayersListMarkup(
+        state.currentSession,
+        state.players,
+        getPlayerHighHandBonus,
+        escapeHtml
+    );
 }
 
 function renderPlayerSelects() {
-    const options = state.players.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
-    const defaultOption = '<option value="">Select player...</option>';
-    
-    if (elements.buyinPlayer) elements.buyinPlayer.innerHTML = defaultOption + options;
-    if (elements.highHandPlayer) elements.highHandPlayer.innerHTML = defaultOption + options;
+    const optionsMarkup = buildPlayerOptionsMarkup(state.players, escapeHtml);
+
+    if (elements.buyinPlayer) elements.buyinPlayer.innerHTML = optionsMarkup;
+    if (elements.highHandPlayer) elements.highHandPlayer.innerHTML = optionsMarkup;
 }
 
 function renderActivity() {
     if (!elements.activityList) return;
-    
-    const buyinActivities = state.activities.filter(a => a.type === 'buyin');
-    
-    if (buyinActivities.length === 0) {
-        elements.activityList.innerHTML = '<li class="empty-state">No buy-ins yet</li>';
-        return;
-    }
-    
-    elements.activityList.innerHTML = buyinActivities.slice(0, 10).map(activity => {
-        const time = new Date(activity.time);
-        const timeStr = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        
-        return `
-            <li>
-                <span class="activity-time">${timeStr}</span>
-                <span class="activity-text">${activity.text}</span>
-            </li>
-        `;
-    }).join('');
+
+    elements.activityList.innerHTML = buildActivityMarkup(state.activities);
 }
 
 function renderHighHand() {
     if (!elements.hhDisplay) return;
-    
-    if (state.highHands.length === 0) {
-        elements.hhDisplay.innerHTML = '<span class="empty-state">No high hand yet</span>';
-        return;
-    }
-    
-    const currentHH = state.highHands[state.highHands.length - 1];
-    elements.hhDisplay.innerHTML = `
-        <div class="hh-winner">
-            <span class="hh-player">${escapeHtml(currentHH.playerName)}</span>
-            <span class="hh-hand">${escapeHtml(currentHH.handType)}</span>
-        </div>
-        ${currentHH.bonus > 0 ? `<div class="hh-bonus">+$${currentHH.bonus} bonus</div>` : ''}
-        ${currentHH.cards ? `<div class="hh-cards">${escapeHtml(currentHH.cards)}</div>` : ''}
-    `;
+
+    elements.hhDisplay.innerHTML = buildHighHandMarkup(state.highHands, escapeHtml);
 }
 
 function renderSettlement() {
@@ -814,41 +825,12 @@ function renderSettlement() {
         return { ...player, profit: 0, settled: false, hhBonus };
     });
     
-    const winners = results.filter(r => r.settled && r.profit > 0).sort((a, b) => b.profit - a.profit);
-    const losers = results.filter(r => r.settled && r.profit < 0).sort((a, b) => a.profit - b.profit);
-    const even = results.filter(r => r.settled && r.profit === 0);
-    const pending = results.filter(r => !r.settled && r.totalBuyin > 0);
+    const sections = buildSettlementSections(results, escapeHtml);
     
     // Render Winners
     if (elements.settleWinners) {
-        if (winners.length > 0 || even.length > 0) {
-            const totalWin = winners.reduce((sum, p) => sum + p.profit, 0);
-            elements.settleWinners.innerHTML = `
-                <div class="settle-group-header">
-                    <span>🏆 Winners</span>
-                    <span>+$${totalWin}</span>
-                </div>
-                <div class="settle-group-list">
-                    ${winners.map(p => `
-                        <div class="settle-result-row">
-                            <span class="settle-result-name">
-                                ${escapeHtml(p.name)}
-                                ${p.hhBonus > 0 ? `<span class="hh-bonus-tag">🏆 +$${p.hhBonus}</span>` : ''}
-                            </span>
-                            <span class="settle-result-amount profit">+$${p.profit}</span>
-                        </div>
-                    `).join('')}
-                    ${even.map(p => `
-                        <div class="settle-result-row">
-                            <span class="settle-result-name">
-                                ${escapeHtml(p.name)}
-                                ${p.hhBonus > 0 ? `<span class="hh-bonus-tag">🏆 +$${p.hhBonus}</span>` : ''}
-                            </span>
-                            <span class="settle-result-amount" style="color: var(--text-muted)">$0</span>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
+        if (sections.winners.length > 0 || sections.even.length > 0) {
+            elements.settleWinners.innerHTML = sections.winnersMarkup;
             elements.settleWinners.classList.remove('hidden');
         } else {
             elements.settleWinners.classList.add('hidden');
@@ -857,25 +839,8 @@ function renderSettlement() {
     
     // Render Losers
     if (elements.settleLosers) {
-        if (losers.length > 0) {
-            const totalLoss = Math.abs(losers.reduce((sum, p) => sum + p.profit, 0));
-            elements.settleLosers.innerHTML = `
-                <div class="settle-group-header">
-                    <span>💸 Owes</span>
-                    <span>-$${totalLoss}</span>
-                </div>
-                <div class="settle-group-list">
-                    ${losers.map(p => `
-                        <div class="settle-result-row">
-                            <span class="settle-result-name">
-                                ${escapeHtml(p.name)}
-                                ${p.hhBonus > 0 ? `<span class="hh-bonus-tag">🏆 +$${p.hhBonus}</span>` : ''}
-                            </span>
-                            <span class="settle-result-amount loss">-$${Math.abs(p.profit)}</span>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
+        if (sections.losers.length > 0) {
+            elements.settleLosers.innerHTML = sections.losersMarkup;
             elements.settleLosers.classList.remove('hidden');
         } else {
             elements.settleLosers.classList.add('hidden');
@@ -884,21 +849,9 @@ function renderSettlement() {
     
     // Render Pending
     if (elements.settlePending && elements.settlePendingList && elements.settlePendingCount) {
-        if (pending.length > 0) {
-            elements.settlePendingCount.textContent = `${pending.length} remaining`;
-            elements.settlePendingList.innerHTML = pending.map(p => `
-                <div class="settle-pending-row">
-                    <div class="settle-pending-info">
-                        <div class="settle-pending-name">
-                            ${escapeHtml(p.name)}
-                            ${p.hhBonus > 0 ? `<span class="hh-bonus-tag">🏆 +$${p.hhBonus}</span>` : ''}
-                        </div>
-                        <div class="settle-pending-buyin">$${p.totalBuyin} in</div>
-                    </div>
-                    <input type="number" class="settle-input" id="settle-${p.id}" placeholder="$" min="0">
-                    <button class="settle-btn" onclick="confirmSettle(${p.id})">✓</button>
-                </div>
-            `).join('');
+        if (sections.pending.length > 0) {
+            elements.settlePendingCount.textContent = `${sections.pending.length} remaining`;
+            elements.settlePendingList.innerHTML = sections.pendingMarkup;
             elements.settlePending.classList.remove('hidden');
         } else if (state.players.length > 0) {
             elements.settlePending.classList.add('hidden');
@@ -911,16 +864,12 @@ function renderSettlement() {
     
     // Render Balance Check
     if (elements.settleBalance) {
-        const totalWinnings = winners.reduce((sum, p) => sum + p.profit, 0);
-        const totalLosses = Math.abs(losers.reduce((sum, p) => sum + p.profit, 0));
-        const diff = Math.abs(totalWinnings - totalLosses);
-        
-        if (winners.length > 0 || losers.length > 0) {
-            const isBalanced = diff < 0.01 && pending.length === 0;
+        if (sections.winners.length > 0 || sections.losers.length > 0) {
+            const isBalanced = sections.diff < 0.01 && sections.pending.length === 0;
             elements.settleBalance.innerHTML = `
                 <span class="settle-balance-label">Balance Check</span>
                 <span class="settle-balance-value ${isBalanced ? 'balanced' : 'unbalanced'}">
-                    ${isBalanced ? '✓ Balanced' : `⚠ Off by $${diff.toFixed(0)}${pending.length > 0 ? ` (${pending.length} pending)` : ''}`}
+                    ${isBalanced ? '✓ Balanced' : `⚠ Off by $${sections.diff.toFixed(0)}${sections.pending.length > 0 ? ` (${sections.pending.length} pending)` : ''}`}
                 </span>
             `;
             elements.settleBalance.classList.remove('hidden');
@@ -1085,6 +1034,242 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+function handleAdvisorAnalyze(e) {
+    e.preventDefault();
+
+    if (!elements.advisorPosition) return;
+
+    const rankA = advisorCards.A.rank;
+    const rankB = advisorCards.B.rank;
+    const suited = advisorCards.A.suit && advisorCards.B.suit && advisorCards.A.suit === advisorCards.B.suit;
+    const street = elements.advisorStreet?.value || 'preflop';
+    const position = elements.advisorPosition.value;
+    const potSize = parseFloat(elements.advisorPotSize?.value || '0');
+    const callAmount = parseFloat(elements.advisorCallAmount?.value || '0');
+    const playersCount = parseInt(elements.advisorPlayersCount?.value || '6', 10);
+    const stackBb = parseInt(elements.advisorStackBb?.value || '100', 10);
+
+    if (!rankA || !rankB || !advisorCards.A.suit || !advisorCards.B.suit) {
+        alert('Select both cards (rank and suit).');
+        return;
+    }
+    if (advisorCards.A.rank === advisorCards.B.rank && advisorCards.A.suit === advisorCards.B.suit) {
+        alert('Choose two different cards.');
+        return;
+    }
+    if (callAmount <= 0 || potSize < 0) {
+        alert('Enter valid pot and call values.');
+        return;
+    }
+
+    const cleanPlayers = Number.isNaN(playersCount) ? 6 : playersCount;
+    const cleanStack = Number.isNaN(stackBb) ? 100 : stackBb;
+
+    let result;
+    if (street === 'flop') {
+        if (!isCardComplete(advisorCards.F1) || !isCardComplete(advisorCards.F2) || !isCardComplete(advisorCards.F3)) {
+            alert('Select all 3 flop cards.');
+            return;
+        }
+
+        result = evaluateFlopSpot({
+            cardA: advisorCards.A,
+            cardB: advisorCards.B,
+            flop1: advisorCards.F1,
+            flop2: advisorCards.F2,
+            flop3: advisorCards.F3,
+            position,
+            potSize,
+            callAmount,
+            playersCount: cleanPlayers,
+            stackBb: cleanStack
+        });
+    } else {
+        result = evaluatePreflopSpot({
+            rankA,
+            rankB,
+            suited,
+            position,
+            potSize,
+            callAmount,
+            playersCount: cleanPlayers,
+            stackBb: cleanStack
+        });
+    }
+
+    renderAdvisorResult(result);
+}
+
+function renderAdvisorResult(result) {
+    if (!elements.advisorResult || !elements.advisorAction || !elements.advisorConfidence || !elements.advisorReasons) return;
+
+    elements.advisorResult.classList.remove('hidden', 'action-raise', 'action-call', 'action-fold');
+    elements.advisorAction.textContent = result.action;
+    elements.advisorConfidence.textContent = `Confidence: ${result.confidence}%`;
+
+    const actionClass = result.action.toLowerCase();
+    elements.advisorResult.classList.add(`action-${actionClass}`);
+
+    elements.advisorReasons.innerHTML = result.reasons.map(reason => `<li>${escapeHtml(reason)}</li>`).join('');
+}
+
+function setAdvisorActiveSlot(slot) {
+    advisorActiveSlot = slot;
+    if (elements.advisorCardA) {
+        elements.advisorCardA.classList.toggle('active', slot === 'A');
+    }
+    if (elements.advisorCardB) {
+        elements.advisorCardB.classList.toggle('active', slot === 'B');
+    }
+    if (elements.advisorFlop1) {
+        elements.advisorFlop1.classList.toggle('active', slot === 'F1');
+    }
+    if (elements.advisorFlop2) {
+        elements.advisorFlop2.classList.toggle('active', slot === 'F2');
+    }
+    if (elements.advisorFlop3) {
+        elements.advisorFlop3.classList.toggle('active', slot === 'F3');
+    }
+}
+
+function handleAdvisorKeypadClick(e) {
+    const key = e.target?.dataset?.key;
+    if (!key) return;
+
+    if (key === 'CLEAR') {
+        advisorCards = {
+            A: { rank: '', suit: '' },
+            B: { rank: '', suit: '' },
+            F1: { rank: '', suit: '' },
+            F2: { rank: '', suit: '' },
+            F3: { rank: '', suit: '' }
+        };
+        setAdvisorActiveSlot('A');
+        updateAdvisorCardSlotUI();
+        return;
+    }
+
+    if (key === 'SWAP') {
+        if (advisorActiveSlot === 'A' || advisorActiveSlot === 'B') {
+            const temp = advisorCards.A;
+            advisorCards.A = advisorCards.B;
+            advisorCards.B = temp;
+        } else {
+            const order = ['F1', 'F2', 'F3'];
+            const idx = order.indexOf(advisorActiveSlot);
+            if (idx >= 0 && idx < order.length - 1) {
+                const left = order[idx];
+                const right = order[idx + 1];
+                const temp = advisorCards[left];
+                advisorCards[left] = advisorCards[right];
+                advisorCards[right] = temp;
+            }
+        }
+        updateAdvisorCardSlotUI();
+        return;
+    }
+
+    if (key === 'BACK') {
+        const slotCard = advisorCards[advisorActiveSlot];
+        if (slotCard.suit) {
+            slotCard.suit = '';
+        } else {
+            slotCard.rank = '';
+        }
+        updateAdvisorCardSlotUI();
+        return;
+    }
+
+    if (['S', 'H', 'D', 'C'].includes(key)) {
+        const duplicate = hasDuplicateCardForSlot(advisorActiveSlot, advisorCards[advisorActiveSlot].rank, key);
+        if (duplicate) {
+            alert('Card already selected in another slot.');
+            return;
+        }
+        advisorCards[advisorActiveSlot].suit = key;
+        if (advisorCards[advisorActiveSlot].rank && advisorActiveSlot === 'A' && !advisorCards.B.rank) {
+            setAdvisorActiveSlot('B');
+        }
+        updateAdvisorCardSlotUI();
+        return;
+    }
+
+    const duplicate = hasDuplicateCardForSlot(advisorActiveSlot, key, advisorCards[advisorActiveSlot].suit);
+    if (duplicate) {
+        alert('Card already selected in another slot.');
+        return;
+    }
+    advisorCards[advisorActiveSlot].rank = key;
+    updateAdvisorCardSlotUI();
+}
+
+function updateAdvisorCardSlotUI() {
+    if (elements.advisorCardA) {
+        elements.advisorCardA.textContent = formatAdvisorCardLabel(advisorCards.A, 'Card 1');
+    }
+    if (elements.advisorCardB) {
+        elements.advisorCardB.textContent = formatAdvisorCardLabel(advisorCards.B, 'Card 2');
+    }
+    if (elements.advisorFlop1) {
+        elements.advisorFlop1.textContent = formatAdvisorCardLabel(advisorCards.F1, 'Flop 1');
+    }
+    if (elements.advisorFlop2) {
+        elements.advisorFlop2.textContent = formatAdvisorCardLabel(advisorCards.F2, 'Flop 2');
+    }
+    if (elements.advisorFlop3) {
+        elements.advisorFlop3.textContent = formatAdvisorCardLabel(advisorCards.F3, 'Flop 3');
+    }
+}
+
+function formatAdvisorCardLabel(card, fallback) {
+    if (!card.rank && !card.suit) return fallback;
+    return `${card.rank || '·'}${advisorSuitSymbol(card.suit)}`;
+}
+
+function advisorSuitSymbol(suit) {
+    if (suit === 'S') return '♠';
+    if (suit === 'H') return '♥';
+    if (suit === 'D') return '♦';
+    if (suit === 'C') return '♣';
+    return '·';
+}
+
+function hasDuplicateCardForSlot(slot, rank, suit) {
+    if (!rank || !suit) return false;
+    return Object.entries(advisorCards).some(([otherSlot, card]) => {
+        if (otherSlot === slot) return false;
+        return card.rank === rank && card.suit === suit;
+    });
+}
+
+function isCardComplete(card) {
+    return !!(card && card.rank && card.suit);
+}
+
+function handleAdvisorStreetChange() {
+    const street = elements.advisorStreet?.value || 'preflop';
+    const isFlop = street === 'flop';
+
+    if (elements.advisorBoardSlots) {
+        elements.advisorBoardSlots.classList.toggle('hidden', !isFlop);
+    }
+
+    if (!isFlop) {
+        advisorCards.F1 = { rank: '', suit: '' };
+        advisorCards.F2 = { rank: '', suit: '' };
+        advisorCards.F3 = { rank: '', suit: '' };
+        if (advisorActiveSlot.startsWith('F')) {
+            setAdvisorActiveSlot('A');
+        }
+    } else if (advisorActiveSlot === 'A' || advisorActiveSlot === 'B') {
+        // keep selected slot if already on a hole card
+    } else {
+        setAdvisorActiveSlot('F1');
+    }
+
+    updateAdvisorCardSlotUI();
 }
 
 // Global functions for onclick

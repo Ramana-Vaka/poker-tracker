@@ -508,6 +508,145 @@ body {
     border-color: var(--accent);
 }
 
+.compact-form input[type="number"] {
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.compact-form input[type="number"]:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+/* Advisor */
+.advisor-card-slots {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.advisor-board-slots {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.advisor-slot {
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border-radius: var(--radius);
+    padding: 12px;
+    font-size: 18px;
+    font-weight: 700;
+    text-align: center;
+    cursor: pointer;
+}
+
+.advisor-slot.board {
+    font-size: 15px;
+    padding: 10px;
+}
+
+.advisor-slot.active {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent-dim) inset;
+}
+
+.advisor-picker-label {
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-top: 2px;
+}
+
+.advisor-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.advisor-picker-btn {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    min-height: 42px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.advisor-picker-btn.suit {
+    font-size: 18px;
+}
+
+.advisor-picker-btn.heart,
+.advisor-picker-btn.diamond {
+    color: #ef4444;
+}
+
+.advisor-picker-btn.action {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.advisor-hint {
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-top: -2px;
+}
+
+.advisor-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.advisor-result {
+    margin-top: 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 12px;
+    background: var(--bg-card);
+}
+
+.advisor-action {
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.advisor-confidence {
+    margin-top: 4px;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.advisor-reasons {
+    margin-top: 10px;
+    padding-left: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.advisor-result.action-raise .advisor-action {
+    color: var(--accent);
+}
+
+.advisor-result.action-call .advisor-action {
+    color: var(--gold);
+}
+
+.advisor-result.action-fold .advisor-action {
+    color: var(--danger);
+}
+
 /* Amount Input */
 .amount-input {
     position: relative;
